@@ -1,0 +1,156 @@
+/* ============================================================
+   fonts.css — @font-face Raleway (file .ttf locali)
+   Tutti i percorsi sono RELATIVI a questo file (src/),
+   quindi puntano a ../assets/fonts/ per funzionare anche
+   aprendo index.html da disco o da GitHub Pages.
+   font-display: swap -> il testo appare subito col font di
+   sistema e viene sostituito da Raleway appena pronto.
+   ============================================================ */
+
+/* --- Pesi diritti (normal) --- */
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: normal;
+  font-weight: 100; /* Thin */
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-Thin.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: normal;
+  font-weight: 200; /* ExtraLight */
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-ExtraLight.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: normal;
+  font-weight: 300; /* Light */
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-Light.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: normal;
+  font-weight: 400; /* Regular */
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: normal;
+  font-weight: 500; /* Medium */
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-Medium.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: normal;
+  font-weight: 600; /* SemiBold */
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-SemiBold.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: normal;
+  font-weight: 700; /* Bold */
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-Bold.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: normal;
+  font-weight: 800; /* ExtraBold */
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-ExtraBold.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: normal;
+  font-weight: 900; /* Black */
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-Black.ttf') format('truetype');
+}
+
+/* --- Pesi corsivi (italic) --- */
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: italic;
+  font-weight: 100;
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-ThinItalic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: italic;
+  font-weight: 200;
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-ExtraLightItalic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: italic;
+  font-weight: 300;
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-LightItalic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-Italic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-MediumItalic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-SemiBoldItalic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-BoldItalic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: italic;
+  font-weight: 800;
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-ExtraBoldItalic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Raleway';
+  font-style: italic;
+  font-weight: 900;
+  font-display: swap;
+  src: url('../assets/fonts/Raleway-BlackItalic.ttf') format('truetype');
+}
