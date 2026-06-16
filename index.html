@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>OFG Slide Builder</title>
+
+  <!-- Fogli di stile (path relativi: funziona da file:// e GitHub Pages).
+       Ordine: token -> font -> stili slide -> stili editor. -->
+  <link rel="stylesheet" href="./src/design-tokens.css">
+  <link rel="stylesheet" href="./src/fonts.css">
+  <link rel="stylesheet" href="./src/slides.css">
+  <link rel="stylesheet" href="./src/editor.css">
+</head>
+<body>
+  <!-- Shell applicazione: toolbar in alto, due pannelli sotto. -->
+  <div class="app">
+
+    <!-- ============ TOOLBAR ============ -->
+    <header class="toolbar">
+      <span class="toolbar__brand">OFG · Slide Builder</span>
+
+      <span class="toolbar__spacer"></span>
+
+      <!-- Carica file .md -->
+      <div class="toolbar__group">
+        <input type="file" id="file-input" class="file-input"
+               accept=".md,.markdown,.txt" aria-label="Carica file markdown">
+        <label for="file-input" class="btn" role="button" tabindex="0">Carica .md</label>
+      </div>
+
+      <!-- Modalita' deck / landing -->
+      <div class="toolbar__group">
+        <span class="toolbar__label">Modalita'</span>
+        <div class="segmented" role="group" aria-label="Modalita' di navigazione">
+          <button type="button" class="segmented__btn is-active" data-mode="deck"
+                  aria-pressed="true">Deck</button>
+          <button type="button" class="segmented__btn" data-mode="landing"
+                  aria-pressed="false">Landing</button>
+        </div>
+      </div>
+
+      <!-- Tema globale anteprima -->
+      <div class="toolbar__group">
+        <span class="toolbar__label">Tema</span>
+        <div class="segmented" role="group" aria-label="Tema globale">
+          <button type="button" class="segmented__btn is-active" data-theme-opt="auto"
+                  aria-pressed="true">Auto</button>
+          <button type="button" class="segmented__btn" data-theme-opt="light"
+                  aria-pressed="false">Chiaro</button>
+          <button type="button" class="segmented__btn" data-theme-opt="dark"
+                  aria-pressed="false">Scuro</button>
+        </div>
+      </div>
+
+      <!-- Export -->
+      <button type="button" id="btn-export" class="btn btn--primary">Esporta HTML</button>
+    </header>
+
+    <!-- ============ WORKSPACE: sorgente | anteprima ============ -->
+    <div class="workspace">
+
+      <!-- Pannello sorgente (sinistra) -->
+      <section class="panel-source" id="panel-source" aria-label="Sorgente markdown">
+        <div class="panel-source__head">
+          <span class="panel-source__title">Markdown</span>
+          <span class="panel-source__count" id="slide-count">0 slide</span>
+        </div>
+        <textarea id="source" class="source" spellcheck="false"
+                  aria-label="Editor markdown delle slide"
+                  placeholder="Scrivi qui il markdown. Una slide per blocco, separati da ---"></textarea>
+        <!-- Avvisi gentili (parsing, caricamento, export). -->
+        <div id="notice" class="notice" role="status" aria-live="polite"></div>
+      </section>
+
+      <!-- Pannello anteprima (destra) -->
+      <section class="panel-preview" aria-label="Anteprima presentazione">
+        <!-- Contenitore del deck: renderer + engine vi iniettano slide e chrome. -->
+        <main id="preview-deck" class="preview-deck deck"></main>
+        <!-- Stato vuoto (nascosto quando ci sono slide). -->
+        <div id="preview-empty" class="preview-empty" hidden>
+          <span class="preview-empty__icon" aria-hidden="true"></span>
+          <p class="preview-empty__text">Nessuna slide. Inizia a scrivere il markdown a sinistra.</p>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- ============ MODULI (ordine importante) ============
+       parser -> renderer -> engine -> export -> editor.
+       Tutti registrano funzioni su window.OFG. editor.js si
+       auto-avvia al DOMContentLoaded trovando #source. -->
+  <script src="./src/parser.js"></script>
+  <script src="./src/renderer.js"></script>
+  <script src="./src/engine.js"></script>
+  <script src="./src/export.js"></script>
+  <script src="./src/editor.js"></script>
+</body>
+</html>
