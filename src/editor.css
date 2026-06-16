@@ -1,0 +1,601 @@
+/* ============================================================
+   editor.css — Interfaccia dell'app Slide Builder OFG
+   --------------------------------------------------------------
+   Shell a due colonne: pannello sorgente (markdown) a sinistra,
+   anteprima live del deck a destra. Toolbar superiore con i
+   controlli (carica .md, modalita' deck/landing, tema, export).
+
+   Su brand OFG: nero/bianco/giallo, font Raleway. Legge SOLO i
+   token da design-tokens.css; nessun colore hardcoded oltre i 3
+   brand (+ grigi tecnici neutri). Responsive: sotto i 900px le
+   due colonne si impilano (sorgente sopra, anteprima sotto).
+
+   NB: questo file definisce anche il LAYOUT di navigazione del
+   deck/landing DENTRO l'anteprima (.deck--deck / .deck--landing
+   e la chrome dots/frecce/indicatore), che e' specifico della
+   shell editor; gli stili di contenuto delle slide arrivano da
+   slides.css.
+   ============================================================ */
+
+/* ============================================================
+   1. SHELL APP — griglia toolbar + due pannelli
+   ============================================================ */
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100dvh;
+  width: 100%;
+  background: var(--black);
+  color: var(--white);
+  overflow: hidden;
+}
+
+/* ---- TOOLBAR ---- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--black);
+  border-bottom: 1px solid var(--line-on-dark);
+  z-index: var(--z-editor-ui);
+}
+
+/* Marchio testuale a sinistra nella toolbar. */
+.toolbar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-weight: var(--fw-black);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  font-size: var(--fs-small);
+  color: var(--white);
+  user-select: none;
+}
+
+/* Pallino giallo firma accanto al marchio (micro-accento). */
+.toolbar__brand::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+}
+
+/* Spinge i gruppi di controlli a destra. */
+.toolbar__spacer {
+  flex: 1 1 auto;
+}
+
+/* Gruppo di controlli (etichetta + comando). */
+.toolbar__group {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.toolbar__label {
+  font-size: var(--fs-small);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* ============================================================
+   2. CONTROLLI — bottoni, toggle a segmenti, file
+   ============================================================ */
+
+/* Bottone base (ghost su fondo scuro). */
+.btn {
+  appearance: none;
+  font-family: inherit;
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--white);
+  background: transparent;
+  border: 1px solid var(--line-on-dark);
+  border-radius: var(--radius-pill);
+  padding: var(--sp-2) var(--sp-4);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  transition:
+    background var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.btn:hover {
+  border-color: var(--accent);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Bottone primario: pieno giallo, testo nero (azione export). */
+.btn--primary {
+  background: var(--accent);
+  color: var(--black);
+  border-color: var(--accent);
+  font-weight: var(--fw-bold);
+}
+
+.btn--primary:hover {
+  filter: brightness(1.06);
+}
+
+.btn--primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+  filter: none;
+}
+
+/* ---- Toggle a segmenti (deck/landing, light/dark) ---- */
+.segmented {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line-on-dark);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  gap: 2px;
+}
+
+.segmented__btn {
+  appearance: none;
+  font-family: inherit;
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: var(--sp-1) var(--sp-3);
+  cursor: pointer;
+  transition:
+    background var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out);
+}
+
+/* Segmento attivo: pillola gialla con testo nero. */
+.segmented__btn.is-active {
+  background: var(--accent);
+  color: var(--black);
+}
+
+.segmented__btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---- Input file nascosto + label come bottone ---- */
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+/* ============================================================
+   3. CORPO — due pannelli (sorgente | anteprima)
+   ============================================================ */
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 34%) 1fr;
+  min-height: 0; /* permette lo scroll interno ai pannelli */
+  overflow: hidden;
+}
+
+/* ---- Pannello sorgente (sinistra) ---- */
+.panel-source {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--line-on-dark);
+  background: #0a0a0a; /* nero leggermente staccato dal puro #000 */
+  position: relative;
+}
+
+/* Intestazione del pannello sorgente. */
+.panel-source__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--line-on-dark);
+}
+
+.panel-source__title {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* Conteggio slide rilevate (badge giallo discreto). */
+.panel-source__count {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+  color: var(--black);
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+  padding: 2px var(--sp-2);
+}
+
+/* Textarea markdown: monospace, leggibile, comoda. */
+.source {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  resize: none;
+  border: none;
+  outline: none;
+  padding: var(--sp-4);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--white);
+  background: transparent;
+  tab-size: 2;
+  caret-color: var(--accent);
+}
+
+.source::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.source::selection {
+  background: var(--accent);
+  color: var(--black);
+}
+
+/* Overlay drag&drop: appare quando si trascina un file sopra. */
+.panel-source.is-dragover::after {
+  content: 'Rilascia qui il file .md';
+  position: absolute;
+  inset: var(--sp-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  color: var(--accent);
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius-lg);
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ---- Pannello anteprima (destra) ---- */
+.panel-preview {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--black);
+}
+
+/* Contenitore del deck: occupa tutto il pannello. L'engine vi
+   inietta le slide e la chrome di navigazione. */
+.preview-deck {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* ============================================================
+   4. LAYOUT NAVIGAZIONE DENTRO L'ANTEPRIMA
+   --------------------------------------------------------------
+   Deck (scroll orizzontale + snap) e landing (griglia 2D). La
+   chrome (dots/frecce/indicatore) e' posizionata rispetto al
+   pannello anteprima (position:absolute, non fixed, per restare
+   confinata nel riquadro destro).
+   ============================================================ */
+
+/* Deck e landing: riga orizzontale di slide a piena larghezza
+   del pannello, con scroll-snap. L'engine usa scrollIntoView; in
+   landing l'ordine globale resta lineare ma i topic restano
+   raggruppati come colonne consecutive. */
+.preview-deck.deck--deck,
+.preview-deck.deck--landing {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.preview-deck.deck--deck::-webkit-scrollbar,
+.preview-deck.deck--landing::-webkit-scrollbar {
+  display: none;
+}
+
+/* Ogni slide occupa l'intero riquadro dell'anteprima. */
+.preview-deck.deck--deck > .slide,
+.preview-deck.deck--landing > .slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  min-height: 0; /* nel riquadro editor non forziamo 100dvh */
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* La slide eredita comunque il proprio fondo dal tema. */
+
+/* ---- Chrome: frecce prev/next ---- */
+.panel-preview .nav-arrows {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  padding: 0 var(--sp-3);
+  z-index: var(--z-controls);
+}
+
+.nav-arrow {
+  pointer-events: auto;
+  width: clamp(36px, 4vw, 48px);
+  height: clamp(36px, 4vw, 48px);
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--white);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+  transition:
+    background var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out),
+    opacity var(--dur-base) var(--ease-out);
+}
+
+.nav-arrow:hover {
+  background: var(--accent);
+  color: var(--black);
+  transform: scale(1.06);
+}
+
+.nav-arrow:disabled {
+  opacity: 0.25;
+  cursor: default;
+  transform: none;
+}
+
+/* ---- Chrome: dots di navigazione (deck) ---- */
+.panel-preview .nav-dots {
+  position: absolute;
+  left: 50%;
+  bottom: var(--sp-4);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  z-index: var(--z-nav);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+  max-width: calc(100% - var(--sp-8));
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.panel-preview .nav-dots::-webkit-scrollbar {
+  display: none;
+}
+
+.nav-dot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.45);
+  transition:
+    width var(--dur-base) var(--ease-out),
+    background var(--dur-base) var(--ease-out);
+}
+
+.nav-dot:hover {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* Dot attivo: pillola gialla allungata (estetica OFG). */
+.nav-dot.is-active {
+  width: 28px;
+  background: var(--accent);
+}
+
+/* ---- Chrome: indicatore posizione 2D (landing) ---- */
+.panel-preview .pos-indicator {
+  position: absolute;
+  right: var(--sp-4);
+  bottom: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--sp-2);
+  z-index: var(--z-nav);
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+}
+
+.pos-indicator__cols {
+  display: flex;
+  gap: 6px;
+}
+
+.pos-indicator__col {
+  width: 18px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.4);
+  transition: background var(--dur-base) var(--ease-out);
+}
+
+.pos-indicator__col.is-active {
+  background: var(--accent);
+}
+
+.pos-indicator__label {
+  color: var(--white);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-caps);
+}
+
+/* ============================================================
+   5. STATO VUOTO + ERRORI DI PARSING
+   ============================================================ */
+
+/* Messaggio centrale quando non c'e' nessuna slide. */
+.preview-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  text-align: center;
+  padding: var(--sp-6);
+  color: rgba(255, 255, 255, 0.6);
+  z-index: 1;
+}
+
+.preview-empty__icon {
+  width: 56px;
+  height: 56px;
+  border: 4px solid var(--accent);
+  border-radius: var(--radius-md);
+  transform: rotate(45deg);
+  opacity: 0.85;
+}
+
+.preview-empty__text {
+  font-size: var(--fs-body);
+  max-width: 36ch;
+}
+
+/* Toast/banner errori parsing: gentile, in basso al pannello sorgente. */
+.notice {
+  position: absolute;
+  left: var(--sp-4);
+  right: var(--sp-4);
+  bottom: var(--sp-4);
+  z-index: 3;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-small);
+  line-height: 1.4;
+  box-shadow: var(--shadow-md);
+  /* Nascosto di default; .is-visible lo mostra. */
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+.notice.is-visible {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+/* Variante info (giallo discreto su nero). */
+.notice--info {
+  background: rgba(255, 255, 0, 0.12);
+  border: 1px solid var(--accent);
+  color: var(--white);
+}
+
+/* Variante errore: niente rosso (fuori brand) -> bordo giallo
+   acceso + sfondo nero, prefisso esplicito nel testo. */
+.notice--error {
+  background: var(--black);
+  border: 1px solid var(--accent);
+  color: var(--white);
+}
+
+.notice strong {
+  color: var(--accent);
+  font-weight: var(--fw-bold);
+}
+
+/* ============================================================
+   6. RESPONSIVE — impila i pannelli sotto i 900px
+   ============================================================ */
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(160px, 38%) 1fr;
+  }
+
+  .panel-source {
+    border-right: none;
+    border-bottom: 1px solid var(--line-on-dark);
+  }
+
+  .toolbar {
+    gap: var(--sp-3);
+  }
+
+  /* Su schermi stretti riduciamo le etichette testuali lunghe. */
+  .toolbar__label {
+    display: none;
+  }
+}
+
+/* ============================================================
+   7. RIDOTTO MOVIMENTO — disattiva le transizioni UI
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .segmented__btn,
+  .nav-arrow,
+  .nav-dot,
+  .notice {
+    transition: none !important;
+  }
+}
