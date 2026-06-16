@@ -488,6 +488,11 @@
    ============================================================ */
 
 /* Messaggio centrale quando non c'e' nessuna slide. */
+/* L'attributo [hidden] da solo non basta: la regola display:flex sotto
+   lo sovrascriverebbe. Questa regola garantisce che sparisca davvero. */
+.preview-empty[hidden] {
+  display: none;
+}
 .preview-empty {
   position: absolute;
   inset: 0;
