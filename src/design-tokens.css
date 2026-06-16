@@ -1,0 +1,157 @@
+/* ============================================================
+   design-tokens.css — Variabili di design condivise OFG
+   Unica fonte di verita' per colori, tipografia, spaziature,
+   raggi, ombre, durate animazioni e z-index.
+   Tutti gli altri CSS (slides, editor) leggono SOLO da qui.
+   ============================================================ */
+
+:root {
+  /* --------------------------------------------------------
+     COLORI BRAND — solo 3 colori ammessi
+     -------------------------------------------------------- */
+  --black: #000000;
+  --white: #ffffff;
+  --yellow: #ffff00;
+
+  /* Sfumature neutre derivate (consentite solo grigi tecnici,
+     mai colori diversi dal brand) */
+  --ink: #111111;          /* testo su fondo chiaro (slide light) */
+  --ink-soft: #333333;     /* testo secondario su fondo chiaro */
+  --paper: #fafafa;        /* bianco leggermente caldo per i fondi light */
+  --line: rgba(0,0,0,0.12);      /* divisori su fondo chiaro */
+  --line-on-dark: rgba(255,255,255,0.16); /* divisori su fondo scuro */
+
+  /* --------------------------------------------------------
+     TEMA DINAMICO — riassegnato dall'engine al cambio slide.
+     Renderer/engine impostano --bg/--fg/--accent sul contenitore
+     (o sul :root in modalita' landing) per animare il tema.
+     Default = tema light.
+     -------------------------------------------------------- */
+  --bg: var(--white);
+  --fg: var(--ink);
+  --accent: var(--yellow);
+
+  /* --------------------------------------------------------
+     TIPOGRAFIA — Raleway con fallback di sistema
+     -------------------------------------------------------- */
+  --font-sans: 'Raleway', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Pesi (corrispondono ai @font-face in fonts.css) */
+  --fw-thin: 100;
+  --fw-extralight: 200;
+  --fw-light: 300;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-extrabold: 800;
+  --fw-black: 900;
+
+  /* Scala tipografica fluida con clamp(min, preferito, max).
+     Titoli display grandi e d'impatto, corpo leggibile. */
+  --fs-display: clamp(2.75rem, 8vw, 7.5rem);  /* cover hero */
+  --fs-h1: clamp(2.25rem, 6vw, 5rem);
+  --fs-h2: clamp(1.75rem, 4.2vw, 3.25rem);    /* titolo slide standard */
+  --fs-h3: clamp(1.25rem, 2.6vw, 1.9rem);
+  --fs-lead: clamp(1.1rem, 2vw, 1.6rem);      /* sottotitoli / lead */
+  --fs-body: clamp(1rem, 1.4vw, 1.25rem);
+  --fs-small: clamp(0.8rem, 1.1vw, 0.95rem);
+  --fs-kpi: clamp(2.5rem, 6vw, 5rem);         /* numero KPI */
+
+  /* Interlinea e spaziatura lettere */
+  --lh-tight: 0.95;   /* titoli display oversize */
+  --lh-heading: 1.08;
+  --lh-body: 1.55;
+  --ls-display: -0.03em; /* serra le lettere sui titoli grandi */
+  --ls-tight: -0.015em;
+  --ls-caps: 0.04em;     /* spaziatura per maiuscoletti/etichette */
+
+  /* --------------------------------------------------------
+     SPAZIATURE — scala su base 4px (token --sp-*)
+     -------------------------------------------------------- */
+  --sp-0: 0;
+  --sp-1: 0.25rem;   /* 4px  */
+  --sp-2: 0.5rem;    /* 8px  */
+  --sp-3: 0.75rem;   /* 12px */
+  --sp-4: 1rem;      /* 16px */
+  --sp-5: 1.5rem;    /* 24px */
+  --sp-6: 2rem;      /* 32px */
+  --sp-7: 3rem;      /* 48px */
+  --sp-8: 4rem;      /* 64px */
+  --sp-9: 6rem;      /* 96px */
+
+  /* Padding interno standard di una slide (responsivo) */
+  --slide-pad: clamp(1.5rem, 5vw, 5rem);
+  --slide-max-w: 1200px; /* larghezza max del contenuto centrato */
+
+  /* --------------------------------------------------------
+     BARRETTA GIALLA — accento firma sotto gli H2
+     -------------------------------------------------------- */
+  --bar-w: 70px;
+  --bar-h: 6px;
+
+  /* --------------------------------------------------------
+     RAGGI
+     -------------------------------------------------------- */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;     /* KPI card nere arrotondate */
+  --radius-pill: 999px;  /* dots nav allungati */
+
+  /* --------------------------------------------------------
+     OMBRE
+     -------------------------------------------------------- */
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.12);
+  --shadow-md: 0 8px 28px rgba(0,0,0,0.18);
+  --shadow-lg: 0 18px 60px rgba(0,0,0,0.28);
+
+  /* --------------------------------------------------------
+     ANIMAZIONI — durate ed easing condivisi
+     -------------------------------------------------------- */
+  --dur-fast: 160ms;
+  --dur-base: 320ms;
+  --dur-slow: 600ms;
+  --dur-reveal: 700ms;          /* reveal d'ingresso elementi */
+  --dur-theme: 600ms;           /* cross-fade del tema */
+  --dur-slide: 800ms;           /* transizione tra slide (transform) */
+  --stagger-step: 70ms;         /* ritardo per figlio (var --i) */
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);     /* deciso in uscita */
+  --ease-inout: cubic-bezier(0.86, 0, 0.07, 1);  /* per transizioni slide */
+  --ease-snap: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* --------------------------------------------------------
+     Z-INDEX — scala centralizzata
+     -------------------------------------------------------- */
+  --z-base: 0;
+  --z-slide-content: 10;
+  --z-nav: 100;        /* dots / indicatore posizione */
+  --z-controls: 110;   /* frecce prev/next */
+  --z-editor-ui: 500;  /* pannello editor, toolbar */
+  --z-overlay: 1000;   /* modali / toast export */
+}
+
+/* ============================================================
+   RESET MINIMO condiviso (box-sizing + base tipografica)
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-body);
+  color: var(--fg);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
