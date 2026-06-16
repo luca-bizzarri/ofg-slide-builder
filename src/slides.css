@@ -1,0 +1,669 @@
+/* ============================================================
+   slides.css — Stili di TUTTI i tipi di slide + microanimazioni
+   --------------------------------------------------------------
+   App 100% client-side, formato 16:9, full-viewport (100dvh),
+   responsive, su brand OFG (nero/bianco/giallo, font Raleway).
+
+   Regole d'oro (vedi SPEC.md sez.5/6 e design-tokens.css):
+   - SOLO 3 colori brand (+ grigi tecnici). Il giallo e' micro-accento.
+   - Ogni colore passa SEMPRE da --bg/--fg/--accent: i blocchi
+     .theme-light/.theme-dark riassegnano quelle variabili, tutto
+     il resto le legge. Cosi' il cambio tema (landing) e' un cross-fade.
+   - Animazioni ADDITIVE: stato finale gia' visibile; il motion gira
+     solo dentro @media (prefers-reduced-motion: no-preference).
+   - Le slide usano 100dvh, NON 100vh.
+   ============================================================ */
+
+/* ============================================================
+   1. TEMA — i due unici blocchi che impostano i colori.
+   Da qui in poi nessun selettore usa colori hardcoded.
+   ============================================================ */
+.theme-light {
+  --bg: var(--white);
+  --fg: var(--ink);
+  --fg-soft: var(--ink-soft);
+  --accent: var(--yellow);
+  --hairline: var(--line);
+  /* Logo nero su fondo chiaro */
+  --logo-src: url('../assets/logo-nero.png');
+}
+
+.theme-dark {
+  --bg: var(--black);
+  --fg: var(--white);
+  --fg-soft: rgba(255, 255, 255, 0.72);
+  --accent: var(--yellow);
+  --hairline: var(--line-on-dark);
+  /* Logo negativo su fondo scuro */
+  --logo-src: url('../assets/logo-negativo.png');
+}
+
+/* ============================================================
+   2. CONTENITORE DECK + base SLIDE
+   ============================================================ */
+.deck {
+  position: relative;
+  width: 100%;
+  background: var(--black); /* gutter neutro dietro le slide */
+}
+
+.slide {
+  position: relative;
+  width: 100%;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  /* Cross-fade del tema (landing) sui colori derivati dalle variabili. */
+  transition:
+    background-color var(--dur-theme) var(--ease-out),
+    color var(--dur-theme) var(--ease-out);
+}
+
+/* Wrapper contenuto centrato, larghezza max controllata. */
+.slide__inner {
+  position: relative;
+  z-index: var(--z-slide-content);
+  width: 100%;
+  max-width: var(--slide-max-w);
+  padding: var(--slide-pad);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+/* Logo firma: posizionato in alto a sinistra, cambia automaticamente
+   (nero su light / negativo su dark) grazie a --logo-src dal tema. */
+.slide__logo {
+  position: absolute;
+  top: var(--slide-pad);
+  left: var(--slide-pad);
+  width: clamp(64px, 9vw, 120px);
+  height: clamp(20px, 3vw, 36px);
+  z-index: calc(var(--z-slide-content) + 1);
+  background-image: var(--logo-src);
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: contain;
+  pointer-events: none;
+}
+
+/* Variante logo in basso a destra (usata su cover/closing). */
+.slide__logo--br {
+  top: auto;
+  left: auto;
+  bottom: var(--slide-pad);
+  right: var(--slide-pad);
+  background-position: right center;
+}
+
+/* ============================================================
+   3. TIPOGRAFIA CONDIVISA
+   ============================================================ */
+
+/* Titolo standard H2: uppercase, peso 900, con barretta gialla sotto. */
+.h2 {
+  margin: 0;
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-black);
+  line-height: var(--lh-heading);
+  letter-spacing: var(--ls-tight);
+  text-transform: uppercase;
+  color: var(--fg);
+}
+
+/* Barretta gialla firma: ~70x6px, draw-in da sinistra. */
+.bar {
+  display: block;
+  width: var(--bar-w);
+  height: var(--bar-h);
+  margin-top: var(--sp-4);
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+/* Sottotitolo / lead. */
+.subtitle {
+  margin: 0;
+  font-size: var(--fs-lead);
+  font-weight: var(--fw-light);
+  line-height: var(--lh-heading);
+  color: var(--fg-soft);
+}
+
+/* Paragrafi del corpo. */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.body p {
+  margin: 0;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-body);
+  color: var(--fg);
+  max-width: 62ch;
+}
+
+/* Formattazioni inline sicure prodotte da parseInline. */
+.slide strong { font-weight: var(--fw-bold); }
+.slide em { font-style: italic; }
+
+.slide code {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  padding: 0.1em 0.4em;
+  border-radius: var(--radius-sm);
+  background: var(--hairline);
+  color: var(--fg);
+}
+
+/* ==evidenziato== -> accento giallo on-brand (testo nero per leggibilita'). */
+.slide mark {
+  background: var(--accent);
+  color: var(--black);
+  padding: 0.02em 0.22em;
+  border-radius: var(--radius-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.slide a {
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+/* ============================================================
+   4. TIPI DI SLIDE
+   ============================================================ */
+
+/* ---- COVER: hero centrato, fondo scuro/testo bianco di default. ---- */
+.slide--cover .slide__inner {
+  align-items: center;
+  text-align: center;
+  gap: var(--sp-6);
+}
+
+.slide--cover .cover__title {
+  margin: 0;
+  font-size: var(--fs-display);
+  font-weight: var(--fw-black);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-display);
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.slide--cover .subtitle {
+  font-size: var(--fs-lead);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  font-weight: var(--fw-medium);
+}
+
+/* Barretta gialla centrata sotto il titolo cover. */
+.slide--cover .bar {
+  margin-inline: auto;
+  transform-origin: center;
+}
+
+/* ---- SECTION: divider di categoria, numero/titolo grande a sinistra. ---- */
+.slide--section .slide__inner {
+  align-items: flex-start;
+  text-align: left;
+  gap: var(--sp-5);
+}
+
+.slide--section .section__title {
+  margin: 0;
+  font-size: var(--fs-h1);
+  font-weight: var(--fw-extrabold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-display);
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.slide--section .bar {
+  width: calc(var(--bar-w) * 2);
+}
+
+/* Filigrana geometrica d'angolo (micro-accento giallo). */
+.slide--section .slide__inner::before {
+  content: '';
+  position: absolute;
+  right: calc(var(--slide-pad) * -0.4);
+  bottom: calc(var(--slide-pad) * -0.6);
+  width: 38vmin;
+  height: 38vmin;
+  border: var(--bar-h) solid var(--accent);
+  border-radius: var(--radius-lg);
+  opacity: 0.18;
+  transform: rotate(12deg);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ---- TEXT: titolo H2 + paragrafi. ---- */
+.slide--text .slide__inner {
+  align-items: flex-start;
+  text-align: left;
+}
+
+/* ---- BULLETS: titolo H2 + elenco puntato custom. ---- */
+.slide--bullets .slide__inner {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.bullets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.bullets li {
+  position: relative;
+  padding-left: var(--sp-6);
+  font-size: var(--fs-lead);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-heading);
+  color: var(--fg);
+}
+
+/* Marcatore: quadratino giallo arrotondato (micro-accento). */
+.bullets li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 0.7em;
+  height: 0.18em;
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+}
+
+/* ---- KPI: titolo H2 + griglia di card nere arrotondate. ---- */
+.slide--kpi .slide__inner {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: var(--sp-4);
+  width: 100%;
+}
+
+/* Card KPI: sempre nera con testo bianco, anche su slide light,
+   per restare on-brand (numero che spicca). */
+.kpi-card {
+  background: var(--black);
+  color: var(--white);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-6) var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-md);
+}
+
+.kpi-card__v {
+  font-size: var(--fs-kpi);
+  font-weight: var(--fw-black);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-display);
+  color: var(--white);
+}
+
+/* Accento giallo sul mark dentro il numero. */
+.kpi-card__v mark {
+  background: transparent;
+  color: var(--accent);
+  padding: 0;
+}
+
+.kpi-card__k {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Filo giallo superiore della card (micro-accento). */
+.kpi-card::before {
+  content: '';
+  display: block;
+  width: var(--bar-w);
+  height: var(--bar-h);
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+  margin-bottom: var(--sp-3);
+}
+
+/* ---- QUOTE: citazione grande centrata. ---- */
+.slide--quote .slide__inner {
+  align-items: flex-start;
+  text-align: left;
+  gap: var(--sp-5);
+  max-width: 64rem;
+}
+
+.quote__mark {
+  font-size: clamp(4rem, 12vw, 9rem);
+  font-weight: var(--fw-black);
+  line-height: 0.6;
+  color: var(--accent);
+  height: 0.5em;
+}
+
+.quote__text {
+  margin: 0;
+  font-size: clamp(1.6rem, 4.5vw, 3rem);
+  font-weight: var(--fw-light);
+  line-height: 1.2;
+  letter-spacing: var(--ls-tight);
+  text-wrap: balance;
+}
+
+.quote__cite {
+  margin: 0;
+  font-size: var(--fs-lead);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  color: var(--fg-soft);
+}
+
+/* ---- IMAGE: foto a piena pagina, titolo in overlay. ---- */
+.slide--image {
+  padding: 0;
+}
+
+.slide--image .media,
+.slide--image .media__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.slide--image .media__img {
+  object-fit: cover;
+}
+
+.slide--image .slide__inner {
+  align-self: flex-end;
+  align-items: flex-start;
+  text-align: left;
+  /* Velo scuro per leggibilita' del titolo sull'immagine. */
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0));
+}
+
+.slide--image .h2,
+.slide--image .subtitle {
+  color: var(--white);
+}
+
+/* ---- SPLIT: testo + foto affiancati 50/50. ---- */
+.slide--split {
+  padding: 0;
+}
+
+.slide--split .slide__inner {
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0;
+  max-width: none;
+  padding: 0;
+}
+
+.split__text {
+  flex: 1 1 50%;
+  min-width: 0;
+  padding: var(--slide-pad);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--sp-5);
+}
+
+.split__media {
+  flex: 1 1 50%;
+  min-width: 0;
+  position: relative;
+}
+
+.split__media .media,
+.split__media .media__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.split__media .media__img {
+  object-fit: cover;
+}
+
+/* ---- CLOSING: chiusura / call to action, hero centrato scuro. ---- */
+.slide--closing .slide__inner {
+  align-items: center;
+  text-align: center;
+  gap: var(--sp-5);
+}
+
+.slide--closing .closing__title {
+  margin: 0;
+  font-size: var(--fs-display);
+  font-weight: var(--fw-black);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-display);
+  text-transform: uppercase;
+}
+
+.slide--closing .subtitle {
+  font-size: var(--fs-lead);
+  letter-spacing: var(--ls-caps);
+}
+
+.slide--closing .bar {
+  margin-inline: auto;
+  transform-origin: center;
+}
+
+/* ============================================================
+   5. MEDIA — wrapper immagine, placeholder geometrico, duotone
+   ============================================================ */
+.media {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  background: var(--black);
+}
+
+.media__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Trattamento on-brand: duotone nero/giallo via filtri + blend.
+   L'immagine viene desaturata e ricolorata verso il giallo. */
+.media--duotone .media__img {
+  filter: grayscale(1) contrast(1.1) brightness(0.95);
+}
+
+.media--duotone::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  mix-blend-mode: multiply;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.media--duotone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--black);
+  mix-blend-mode: lighten;
+  pointer-events: none;
+}
+
+/* Placeholder geometrico elegante quando l'immagine manca:
+   pattern di linee diagonali nero/giallo. */
+.media--placeholder {
+  background-color: var(--black);
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      transparent 0,
+      transparent 22px,
+      rgba(255, 255, 0, 0.12) 22px,
+      rgba(255, 255, 0, 0.12) 24px
+    ),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 0, 0.16), transparent 60%);
+}
+
+/* Glifo geometrico centrale del placeholder (quadrato giallo aperto). */
+.media--placeholder::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 22%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 4px solid var(--accent);
+  border-radius: var(--radius-md);
+  opacity: 0.85;
+}
+
+/* ============================================================
+   6. MICROANIMAZIONI D'INGRESSO (reveal + stagger + draw-in)
+   --------------------------------------------------------------
+   STATO FINALE = VISIBILE per default (animazioni additive).
+   I valori "di partenza" (opacity:0, translate, scaleX:0) sono
+   applicati SOLO dentro @media (prefers-reduced-motion: no-preference),
+   cosi' chi preferisce meno moto vede subito tutto a posto.
+   L'engine aggiunge .is-visible per innescare la transizione.
+   ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  /* Elemento generico da rivelare: parte sfocato in basso. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity var(--dur-reveal) var(--ease-out),
+      transform var(--dur-reveal) var(--ease-out);
+    /* Stagger: ritardo proporzionale all'indice --i (default 0). */
+    transition-delay: calc(var(--i, 0) * var(--stagger-step));
+    will-change: opacity, transform;
+  }
+
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Varianti direzionali del reveal (data-anim sul renderer). */
+  .reveal[data-anim='left'] { transform: translateX(-24px); }
+  .reveal[data-anim='right'] { transform: translateX(24px); }
+  .reveal[data-anim='scale'] { transform: scale(0.92); }
+  .reveal[data-anim='fade'] { transform: none; }
+
+  .reveal[data-anim='left'].is-visible,
+  .reveal[data-anim='right'].is-visible,
+  .reveal[data-anim='scale'].is-visible {
+    transform: none;
+  }
+
+  /* Barretta gialla: draw-in da sinistra (scaleX 0 -> 1). */
+  .bar {
+    transition:
+      transform var(--dur-reveal) var(--ease-out);
+    transition-delay: calc(var(--i, 0) * var(--stagger-step));
+  }
+
+  .bar.is-visible,
+  .is-visible > .bar,
+  .is-visible .bar {
+    transform: scaleX(1);
+  }
+
+  /* Media: leggero zoom-in d'ingresso. */
+  .reveal .media__img,
+  .reveal.media__img {
+    transition: transform var(--dur-slide) var(--ease-out);
+  }
+}
+
+/* ============================================================
+   7. RIDOTTO MOVIMENTO — neutralizza ogni animazione/transizione.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal.is-visible {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .bar {
+    transform: scaleX(1) !important;
+    transition: none !important;
+  }
+
+  .slide {
+    transition: none !important;
+  }
+}
+
+/* ============================================================
+   8. RESPONSIVE — fallback verticale su mobile.
+   ============================================================ */
+@media (max-width: 768px) {
+  .slide__inner {
+    gap: var(--sp-4);
+  }
+
+  /* Split impila testo sopra, foto sotto. */
+  .slide--split .slide__inner {
+    flex-direction: column;
+  }
+
+  .split__text,
+  .split__media {
+    flex: 1 1 auto;
+    min-height: 38dvh;
+  }
+
+  .split__text {
+    padding: var(--slide-pad);
+  }
+
+  /* KPI a colonna singola. */
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
