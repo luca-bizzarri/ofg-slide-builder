@@ -192,6 +192,99 @@
 }
 
 /* ============================================================
+   2b. MENU A TENDINA (toolbar: File / Importa / Inserisci)
+   --------------------------------------------------------------
+   Il contenitore .menu e' relative; il pannello .menu__panel e'
+   assoluto sotto al bottone, con z-index alto cosi' galleggia sopra
+   il resto senza spingere il layout. Coerente col brand (nero/giallo).
+   ============================================================ */
+.menu {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Il bottone del menu usa lo stile .btn; aggiunge una freccetta. */
+.menu__btn::after {
+  content: '';
+  width: 0;
+  height: 0;
+  margin-left: 2px;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+/* Bottone del menu aperto: bordo giallo + freccetta ruotata. */
+.menu.is-open > .menu__btn {
+  border-color: var(--accent);
+}
+
+.menu.is-open > .menu__btn::after {
+  transform: rotate(180deg);
+}
+
+/* Pannello voci: nascosto di default, appare quando .menu.is-open. */
+.menu__panel {
+  position: absolute;
+  top: calc(100% + var(--sp-2));
+  left: 0;
+  z-index: var(--z-overlay, 1000);
+  min-width: 220px;
+  margin: 0;
+  padding: var(--sp-2);
+  list-style: none;
+  background: #0a0a0a;
+  border: 1px solid var(--line-on-dark);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  display: none;
+}
+
+.menu.is-open > .menu__panel {
+  display: block;
+}
+
+/* Voce di menu: occupa tutta la riga, allineata a sinistra. Funziona
+   sia come <button> sia come <label> (input file nascosto). */
+.menu__item {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  appearance: none;
+  font-family: inherit;
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--white);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm, 6px);
+  padding: var(--sp-2) var(--sp-3);
+  cursor: pointer;
+  transition:
+    background var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out);
+}
+
+.menu__item:hover,
+.menu__item:focus-visible {
+  background: var(--accent);
+  color: var(--black);
+  outline: none;
+}
+
+/* Separatore fra gruppi di voci. */
+.menu__sep {
+  height: 1px;
+  margin: var(--sp-2) var(--sp-1);
+  background: var(--line-on-dark);
+  list-style: none;
+}
+
+/* ============================================================
    3. CORPO — due pannelli (sorgente | anteprima)
    ============================================================ */
 .workspace {
