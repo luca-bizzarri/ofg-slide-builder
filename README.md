@@ -34,6 +34,8 @@ font **Raleway** (`.ttf` locali). Funziona aprendo `index.html` da disco e su
 - **Foto: ritaglio e posizionamento** non distruttivi (fit, punto focale, zoom) dalla
   **modalita' Layout**, e **drag-drop delle foto nei placeholder** direttamente sull'anteprima.
 - **Riordino slide** trascinando le miniature nel pannello *Ordina slide*.
+- **Salva / Apri progetto**: scarichi un file `.ofg` con markdown + foto + impostazioni
+  (menu *File*) per riprendere il lavoro senza perdere le immagini.
 - Export di un file HTML autonomo (CSS + JS inline) pronto per la condivisione.
 
 ---
@@ -155,6 +157,7 @@ src/import-table.js     import Excel/CSV/incolla -> tabella (window.OFG.tables)
 src/blocks.js           manipolazione blocchi markdown: riordino, immagini (window.OFG.blocks)
 src/cropper.js          widget ritaglio/posizione/zoom foto (window.OFG.Cropper)
 src/cropper.css         stili del cropper
+src/project.js          salva/apri progetto .ofg (window.OFG.project)
 src/vendor/jszip.min.js libreria per leggere lo ZIP .pptx nel browser
 src/vendor/xlsx.full.min.js  libreria SheetJS per leggere .xlsx/.csv
 samples/esempio.md      demo con tutti i tipi di slide e due topic
