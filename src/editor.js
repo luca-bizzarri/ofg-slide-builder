@@ -491,6 +491,14 @@
   /* Avvio: carica il sorgente (autosave > sample esterno > starter)
      e disegna la prima anteprima. */
   Editor.prototype._boot = function () {
+    /* Priorita': se l'URL porta un markdown (#md=... da "Componi con AI" di
+       ofg-tool), apriamo direttamente quel deck. */
+    if (this._loadFromUrl()) {
+      this._syncControls();
+      this._mountGallery();
+      this._renderStrip();
+      return;
+    }
     var saved = lsGet(STORAGE_KEY);
     if (this.elSource) {
       if (saved != null && saved !== '') {
@@ -526,6 +534,43 @@
         self.elSource.value = STARTER_MD;
         self._render();
       });
+  };
+
+  /* Decodifica base64url (UTF-8 safe). */
+  function b64urlToUtf8(s) {
+    s = String(s).replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    var bin = global.atob(s);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    if (global.TextDecoder) return new global.TextDecoder('utf-8').decode(bytes);
+    return decodeURIComponent(escape(bin));
+  }
+
+  /* Carica un markdown passato via URL ("#md=<base64url>" o "?md=..."): usato
+     dalla pagina "Componi con AI" di ofg-tool per aprire il deck gia' pronto
+     senza copia-incolla. Ritorna true se ha caricato qualcosa. */
+  Editor.prototype._loadFromUrl = function () {
+    if (!this.elSource) return false;
+    try {
+      var m = (global.location.hash || '').match(/[#&]md=([^&]+)/);
+      if (!m) m = (global.location.search || '').match(/[?&]md=([^&]+)/);
+      if (!m) return false;
+      var md = b64urlToUtf8(decodeURIComponent(m[1]));
+      if (!md || !md.trim()) return false;
+      this.elSource.value = md;
+      this._render();
+      this._persist();
+      /* Ripulisce l'URL (toglie il payload) senza ricaricare la pagina. */
+      try {
+        var search = (global.location.search || '').replace(/([?&])md=[^&]+/, '$1').replace(/[?&]$/, '');
+        global.history.replaceState(null, '', global.location.pathname + search);
+      } catch (e) { /* file:// puo' bloccare replaceState */ }
+      this._showNotice('info', 'Bozza generata con l\'AI caricata. Modificala pure e poi Esporta.');
+      return true;
+    } catch (e) {
+      return false;
+    }
   };
 
   /* --------------------------------------------------------
