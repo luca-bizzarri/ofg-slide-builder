@@ -593,14 +593,172 @@
 }
 
 /* ============================================================
-   7. RIDOTTO MOVIMENTO — disattiva le transizioni UI
+   7. MODALITA' LAYOUT — ritaglio foto + drop su slide
+   ============================================================ */
+
+/* Bottone toolbar in stato attivo (toggle Layout): pillola gialla. */
+.btn.is-active {
+  background: var(--accent);
+  color: var(--black);
+  border-color: var(--accent);
+}
+
+/* Quando la modalita' Layout e' attiva, le foto diventano cliccabili
+   e le slide accettano il drop di una foto. */
+.preview-deck.is-layout .media,
+.preview-deck.is-layout .media__img,
+.preview-deck.is-layout .split__media {
+  cursor: zoom-in;
+}
+
+/* Hint visivo sui placeholder: "Trascina foto qui". */
+.preview-deck.is-layout .media--placeholder {
+  outline: 2px dashed var(--accent);
+  outline-offset: -8px;
+}
+
+.preview-deck.is-layout .media--placeholder::before {
+  content: 'Trascina foto qui';
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  transform: translateX(-50%);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  color: var(--accent);
+  background: rgba(0, 0, 0, 0.6);
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Slide bersaglio del drop (durante il trascinamento). */
+.preview-deck.is-layout .slide.is-drop-target::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--accent);
+  background: rgba(255, 255, 0, 0.12);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ============================================================
+   8. STRISCIA RIORDINO SLIDE
+   ============================================================ */
+
+/* Pannello a fisarmonica sotto la galleria immagini. */
+.strip-panel {
+  border-top: 1px solid var(--line-on-dark);
+  flex: 0 0 auto;
+}
+
+.strip-panel__head {
+  cursor: pointer;
+  padding: var(--sp-3) var(--sp-4);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  color: rgba(255, 255, 255, 0.7);
+  user-select: none;
+}
+
+.strip-panel__head:hover {
+  color: var(--accent);
+}
+
+/* Contenitore voci: lista verticale scrollabile. */
+.slide-strip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-3) var(--sp-3);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+/* Voce singola: numero + tipo + titolo, trascinabile. */
+.slide-strip__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line-on-dark);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: grab;
+  transition:
+    background var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    opacity var(--dur-base) var(--ease-out);
+}
+
+.slide-strip__item:hover {
+  border-color: var(--accent);
+}
+
+.slide-strip__item.is-dragging {
+  opacity: 0.45;
+  cursor: grabbing;
+}
+
+/* Voce sotto il cursore durante il drag: evidenziata. */
+.slide-strip__item.is-drop-over {
+  border-color: var(--accent);
+  background: rgba(255, 255, 0, 0.14);
+}
+
+.slide-strip__num {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--black);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-bold);
+}
+
+.slide-strip__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.slide-strip__type {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  color: var(--accent);
+  font-weight: var(--fw-semibold);
+}
+
+.slide-strip__title {
+  font-size: var(--fs-small);
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================================
+   9. RIDOTTO MOVIMENTO — disattiva le transizioni UI
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
   .btn,
   .segmented__btn,
   .nav-arrow,
   .nav-dot,
-  .notice {
+  .notice,
+  .slide-strip__item {
     transition: none !important;
   }
 }
