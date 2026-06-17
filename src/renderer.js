@@ -160,6 +160,21 @@
       img.alt = '';
       img.loading = 'lazy';
       img.decoding = 'async';
+      /* Inquadratura personalizzata (crop/posizione/zoom non distruttivi):
+         applicata come stili inline cosi' viaggia anche nell'export. */
+      var io = opts.opts;
+      if (io) {
+        if (io.fit) img.style.objectFit = io.fit;
+        if (typeof io.posX === 'number' || typeof io.posY === 'number') {
+          var px = typeof io.posX === 'number' ? io.posX : 50;
+          var py = typeof io.posY === 'number' ? io.posY : 50;
+          img.style.objectPosition = px + '% ' + py + '%';
+        }
+        if (typeof io.zoom === 'number' && io.zoom !== 1) {
+          img.style.transform = 'scale(' + io.zoom + ')';
+          img.style.transformOrigin = 'center center';
+        }
+      }
       /* Se l'immagine fallisce il caricamento, degradiamo
          elegantemente al placeholder geometrico. */
       img.addEventListener('error', function () {
@@ -357,7 +372,7 @@
     if (slide.body) textCol.appendChild(buildBody(slide.body, i));
 
     var mediaCol = el('div', 'split__media');
-    var media = buildMedia(slide.image, { duotone: false });
+    var media = buildMedia(slide.image, { duotone: false, opts: slide.imageOpts });
     reveal(media, 0, 'right');
     mediaCol.appendChild(media);
 
@@ -388,6 +403,45 @@
     }
   }
 
+  /* Slide TABELLA: titolo opzionale + tabella dati on-brand. */
+  function renderTable(slide, inner) {
+    inner.appendChild(buildLogo(false));
+    var i = 0;
+    if (slide.title) { inner.appendChild(buildHeading(slide.title, i)); i += 2; }
+
+    var t = slide.table || { headers: [], rows: [] };
+    var wrap = el('div', 'table-wrap');
+    var table = el('table', 'data-table');
+
+    if (t.headers && t.headers.length) {
+      var thead = el('thead');
+      var trh = el('tr');
+      for (var c = 0; c < t.headers.length; c++) {
+        var th = el('th');
+        setHTML(th, t.headers[c]);
+        trh.appendChild(th);
+      }
+      thead.appendChild(trh);
+      table.appendChild(thead);
+    }
+
+    var tbody = el('tbody');
+    var rows = t.rows || [];
+    for (var r = 0; r < rows.length; r++) {
+      var tr = el('tr');
+      for (var cc = 0; cc < rows[r].length; cc++) {
+        var td = el('td');
+        setHTML(td, rows[r][cc]);
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    reveal(wrap, i++);
+    inner.appendChild(wrap);
+  }
+
   /* Tabella di dispatch tipo -> renderer. */
   var RENDERERS = {
     cover: renderCover,
@@ -398,7 +452,8 @@
     quote: renderQuote,
     image: renderImage,
     split: renderSplit,
-    closing: renderClosing
+    closing: renderClosing,
+    table: renderTable
   };
 
   /* --------------------------------------------------------
@@ -429,7 +484,7 @@
 
     /* La slide IMAGE ha la foto piena sotto l'inner (overlay). */
     if (type === 'image') {
-      var media = buildMedia(slide.image, { duotone: false });
+      var media = buildMedia(slide.image, { duotone: false, opts: slide.imageOpts });
       section.appendChild(media);
     }
 
