@@ -128,21 +128,37 @@
       '--fg-soft:rgba(255,255,255,.72);--accent:var(--yellow);',
       '--hairline:var(--line-on-dark)}',
       /* ---- Deck container + slide base ---- */
-      '.deck{position:relative;width:100vw;height:100dvh;background:var(--black)}',
+      '.deck{position:relative;width:100vw;height:100dvh;background:var(--black);--slide-total:0}',
       '.slide{position:relative;width:100%;min-height:100dvh;display:flex;',
       'align-items:center;justify-content:center;overflow:hidden;background:var(--bg);',
-      'color:var(--fg);transition:background-color var(--dur-theme) var(--ease-out),',
+      'color:var(--fg);--frame-top:clamp(2.75rem,7vh,5.5rem);',
+      'transition:background-color var(--dur-theme) var(--ease-out),',
       'color var(--dur-theme) var(--ease-out)}',
       '.slide__inner{position:relative;z-index:var(--z-slide-content);width:100%;',
-      'max-width:var(--slide-max-w);padding:var(--slide-pad);display:flex;',
+      'max-width:var(--slide-max-w);padding:var(--slide-pad);',
+      'padding-top:calc(var(--slide-pad) + var(--frame-top));',
+      'padding-bottom:calc(var(--slide-pad) + var(--sp-6));display:flex;',
       'flex-direction:column;gap:var(--sp-5)}',
+      /* CORNICE: logo fisso in alto a sinistra (uguale su ogni slide) */
       '.slide__logo{position:absolute;top:var(--slide-pad);left:var(--slide-pad);',
-      'width:clamp(64px,9vw,120px);height:clamp(20px,3vw,36px);',
-      'z-index:calc(var(--z-slide-content) + 1);background-image:var(--logo-src);',
+      'width:clamp(72px,8vw,116px);height:clamp(22px,2.6vw,34px);',
+      'z-index:calc(var(--z-slide-content) + 2);background-image:var(--logo-src);',
       'background-repeat:no-repeat;background-position:left center;',
       'background-size:contain;pointer-events:none}',
-      '.slide__logo--br{top:auto;left:auto;bottom:var(--slide-pad);',
-      'right:var(--slide-pad);background-position:right center}',
+      /* CORNICE: eyebrow/kicker con micro-tratto giallo */
+      '.eyebrow{display:inline-flex;align-items:center;gap:var(--sp-3);margin:0;',
+      'font-size:var(--fs-small);font-weight:var(--fw-bold);text-transform:uppercase;',
+      'letter-spacing:.18em;color:var(--fg-soft);white-space:nowrap}',
+      ".eyebrow::before{content:'';width:clamp(20px,2.4vw,32px);height:3px;",
+      'background:var(--accent);border-radius:var(--radius-pill);flex:0 0 auto}',
+      /* CORNICE: numero slide in basso a destra "NN / TOT" */
+      '.slide__pageno{position:absolute;bottom:var(--slide-pad);right:var(--slide-pad);',
+      'z-index:calc(var(--z-slide-content) + 2);font-size:var(--fs-small);',
+      'font-weight:var(--fw-semibold);letter-spacing:var(--ls-caps);color:var(--fg-soft);',
+      'font-variant-numeric:tabular-nums;pointer-events:none;display:flex;',
+      'align-items:baseline;gap:.35em}',
+      '.slide__pageno b{font-weight:var(--fw-black);color:var(--fg)}',
+      '.slide__pageno i{font-style:normal;opacity:.55}',
       /* ---- Tipografia condivisa ---- */
       '.h2{margin:0;font-size:var(--fs-h2);font-weight:var(--fw-black);',
       'line-height:var(--lh-heading);letter-spacing:var(--ls-tight);',
@@ -165,31 +181,37 @@
       'text-decoration-color:var(--accent);text-decoration-thickness:2px;',
       'text-underline-offset:3px}',
       /* ---- Tipi slide ---- */
-      '.slide--cover .slide__inner{align-items:center;text-align:center;gap:var(--sp-6)}',
+      '.slide--cover .slide__inner{align-items:flex-start;text-align:left;',
+      'justify-content:flex-end;min-height:100dvh;gap:var(--sp-5)}',
       '.slide--cover .cover__title{margin:0;font-size:var(--fs-display);',
       'font-weight:var(--fw-black);line-height:var(--lh-tight);',
       'letter-spacing:var(--ls-display);text-transform:uppercase;text-wrap:balance}',
       '.slide--cover .subtitle{font-size:var(--fs-lead);text-transform:uppercase;',
-      'letter-spacing:var(--ls-caps);font-weight:var(--fw-medium)}',
-      '.slide--cover .bar{margin-inline:auto;transform-origin:center}',
-      '.slide--section .slide__inner{align-items:flex-start;text-align:left;gap:var(--sp-5)}',
+      'letter-spacing:var(--ls-caps);font-weight:var(--fw-medium);color:var(--fg)}',
+      '.slide--cover .bar{width:calc(var(--bar-w)*1.4)}',
+      ".slide--cover::after{content:'';position:absolute;top:12%;right:-10vmin;",
+      'width:52vmin;height:52vmin;border:var(--bar-h) solid var(--accent);',
+      'border-radius:var(--radius-lg);opacity:.14;transform:rotate(-12deg);',
+      'pointer-events:none;z-index:0}',
+      '.slide--section .slide__inner{align-items:flex-start;text-align:left;',
+      'justify-content:center;gap:var(--sp-5)}',
+      '.section__num{margin:0;font-size:clamp(5rem,22vw,18rem);font-weight:var(--fw-black);',
+      'line-height:.82;letter-spacing:var(--ls-display);color:transparent;',
+      '-webkit-text-stroke:clamp(2px,.4vw,4px) var(--accent);',
+      'text-stroke:clamp(2px,.4vw,4px) var(--accent);opacity:.9}',
       '.slide--section .section__title{margin:0;font-size:var(--fs-h1);',
       'font-weight:var(--fw-extrabold);line-height:var(--lh-tight);',
       'letter-spacing:var(--ls-display);text-transform:uppercase;text-wrap:balance}',
       '.slide--section .bar{width:calc(var(--bar-w)*2)}',
-      ".slide--section .slide__inner::before{content:'';position:absolute;",
-      'right:calc(var(--slide-pad)*-.4);bottom:calc(var(--slide-pad)*-.6);',
-      'width:38vmin;height:38vmin;border:var(--bar-h) solid var(--accent);',
-      'border-radius:var(--radius-lg);opacity:.18;transform:rotate(12deg);',
-      'pointer-events:none;z-index:-1}',
       '.slide--text .slide__inner,.slide--bullets .slide__inner,',
       '.slide--kpi .slide__inner{align-items:flex-start;text-align:left}',
       '.bullets{list-style:none;margin:0;padding:0;display:flex;',
-      'flex-direction:column;gap:var(--sp-4)}',
-      '.bullets li{position:relative;padding-left:var(--sp-6);font-size:var(--fs-lead);',
-      'font-weight:var(--fw-regular);line-height:var(--lh-heading);color:var(--fg)}',
-      ".bullets li::before{content:'';position:absolute;left:0;top:.55em;width:.7em;",
-      'height:.18em;background:var(--accent);border-radius:var(--radius-pill)}',
+      'flex-direction:column;gap:var(--sp-5);width:100%}',
+      '.bullets li{position:relative;padding-left:var(--sp-7);font-size:var(--fs-lead);',
+      'font-weight:var(--fw-regular);line-height:var(--lh-heading);color:var(--fg);',
+      'max-width:56ch}',
+      ".bullets li::before{content:'';position:absolute;left:0;top:.5em;width:1.4em;",
+      'height:.2em;background:var(--accent);border-radius:var(--radius-pill)}',
       '.kpi-grid{display:grid;',
       'grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));',
       'gap:var(--sp-4);width:100%}',
@@ -206,35 +228,48 @@
       'background:var(--accent);border-radius:var(--radius-pill);margin-bottom:var(--sp-3)}',
       '.slide--quote .slide__inner{align-items:flex-start;text-align:left;',
       'gap:var(--sp-5);max-width:64rem}',
-      '.quote__mark{font-size:clamp(4rem,12vw,9rem);font-weight:var(--fw-black);',
-      'line-height:.6;color:var(--accent);height:.5em}',
-      '.quote__text{margin:0;font-size:clamp(1.6rem,4.5vw,3rem);',
-      'font-weight:var(--fw-light);line-height:1.2;letter-spacing:var(--ls-tight);',
+      '.quote__mark{font-size:clamp(5rem,14vw,11rem);font-weight:var(--fw-black);',
+      'line-height:.6;color:var(--accent);height:.45em}',
+      '.quote__text{margin:0;font-size:clamp(1.7rem,4.6vw,3.2rem);',
+      'font-weight:var(--fw-light);line-height:1.18;letter-spacing:var(--ls-tight);',
       'text-wrap:balance}',
       '.quote__cite{margin:0;font-size:var(--fs-lead);font-weight:var(--fw-semibold);',
-      'text-transform:uppercase;letter-spacing:var(--ls-caps);color:var(--fg-soft)}',
-      '.slide--image{padding:0}',
+      'text-transform:uppercase;letter-spacing:var(--ls-caps);color:var(--fg-soft);',
+      'display:inline-flex;align-items:center;gap:var(--sp-3)}',
+      ".quote__cite::before{content:'';width:clamp(24px,3vw,40px);height:3px;",
+      'background:var(--accent);border-radius:var(--radius-pill)}',
       '.slide--image .media,.slide--image .media__img{position:absolute;inset:0;',
       'width:100%;height:100%}',
       '.slide--image .media__img{object-fit:cover}',
+      ".slide--image::before{content:'';position:absolute;inset:0;z-index:1;",
+      'background:linear-gradient(to top,rgba(0,0,0,.8) 0%,rgba(0,0,0,0) 55%),',
+      'linear-gradient(to bottom,rgba(0,0,0,.45) 0%,rgba(0,0,0,0) 30%);',
+      'pointer-events:none}',
       '.slide--image .slide__inner{align-self:flex-end;align-items:flex-start;',
-      'text-align:left;background:linear-gradient(to top,rgba(0,0,0,.7),rgba(0,0,0,0))}',
-      '.slide--image .h2,.slide--image .subtitle{color:var(--white)}',
+      'justify-content:flex-end;text-align:left;min-height:100dvh}',
+      '.slide--image .h2,.slide--image .subtitle,.slide--image .eyebrow,',
+      '.slide--image .slide__pageno b{color:var(--white)}',
+      '.slide--image .slide__pageno,.slide--image .eyebrow{color:rgba(255,255,255,.78)}',
       '.slide--split{padding:0}',
       '.slide--split .slide__inner{flex-direction:row;align-items:stretch;gap:0;',
-      'max-width:none;padding:0}',
-      '.split__text{flex:1 1 50%;min-width:0;padding:var(--slide-pad);display:flex;',
+      'max-width:none;padding:0;padding-top:0;padding-bottom:0}',
+      '.split__text{flex:1 1 55%;min-width:0;padding:var(--slide-pad);',
+      'padding-top:calc(var(--slide-pad) + var(--frame-top));display:flex;',
       'flex-direction:column;justify-content:center;gap:var(--sp-5)}',
-      '.split__media{flex:1 1 50%;min-width:0;position:relative}',
+      '.split__media{flex:1 1 45%;min-width:0;position:relative}',
       '.split__media .media,.split__media .media__img{position:absolute;inset:0;',
       'width:100%;height:100%}',
       '.split__media .media__img{object-fit:cover}',
-      '.slide--closing .slide__inner{align-items:center;text-align:center;gap:var(--sp-5)}',
+      '.slide--closing .slide__inner{align-items:center;text-align:center;',
+      'justify-content:center;gap:var(--sp-5)}',
+      '.slide--closing .eyebrow{align-self:center}',
       '.slide--closing .closing__title{margin:0;font-size:var(--fs-display);',
       'font-weight:var(--fw-black);line-height:var(--lh-tight);',
-      'letter-spacing:var(--ls-display);text-transform:uppercase}',
-      '.slide--closing .subtitle{font-size:var(--fs-lead);letter-spacing:var(--ls-caps)}',
-      '.slide--closing .bar{margin-inline:auto;transform-origin:center}',
+      'letter-spacing:var(--ls-display);text-transform:uppercase;text-wrap:balance}',
+      '.slide--closing .subtitle{font-size:var(--fs-lead);letter-spacing:var(--ls-caps);',
+      'text-align:center;max-width:48ch}',
+      '.slide--closing .bar{margin-inline:auto;transform-origin:center;',
+      'width:calc(var(--bar-w)*1.4)}',
       /* ---- Media + placeholder + duotone ---- */
       '.media{position:relative;display:block;width:100%;overflow:hidden;',
       'background:var(--black)}',
@@ -251,14 +286,14 @@
       'border:4px solid var(--accent);border-radius:var(--radius-md);opacity:.85}',
       /* ---- Animazioni reveal ---- */
       '@media (prefers-reduced-motion:no-preference){',
-      '.reveal{opacity:0;transform:translateY(16px);',
+      '.reveal{opacity:0;transform:translateY(18px);',
       'transition:opacity var(--dur-reveal) var(--ease-out),',
       'transform var(--dur-reveal) var(--ease-out);',
       'transition-delay:calc(var(--i,0)*var(--stagger-step));',
       'will-change:opacity,transform}',
       '.reveal.is-visible{opacity:1;transform:none}',
-      ".reveal[data-anim='left']{transform:translateX(-24px)}",
-      ".reveal[data-anim='right']{transform:translateX(24px)}",
+      ".reveal[data-anim='left']{transform:translateX(-26px)}",
+      ".reveal[data-anim='right']{transform:translateX(26px)}",
       ".reveal[data-anim='scale']{transform:scale(.92)}",
       ".reveal[data-anim='fade']{transform:none}",
       ".reveal[data-anim='left'].is-visible,.reveal[data-anim='right'].is-visible,",
@@ -331,9 +366,12 @@
       '.data-table tbody tr:last-child td{border-bottom:none}',
       /* ---- Responsive ---- */
       '@media (max-width:768px){',
+      '.slide{--frame-top:clamp(2.5rem,9vh,4rem)}',
       '.slide--split .slide__inner{flex-direction:column}',
       '.split__text,.split__media{flex:1 1 auto;min-height:38dvh}',
+      '.split__text{padding-top:calc(var(--slide-pad) + var(--frame-top))}',
       '.kpi-grid{grid-template-columns:1fr}',
+      '.section__num{font-size:clamp(4rem,30vw,9rem)}',
       '}'
     ].join('');
   }
@@ -442,12 +480,33 @@
       : 'Presentazione OFG';
     var models = resolveModelImages(Array.isArray(slides) ? slides : []);
 
+    /* Recupera il testo di un foglio di stile incluso in pagina,
+       cercando il <link> il cui href contiene pathMatch. */
+    function fetchCssText(pathMatch) {
+      var links = document.getElementsByTagName('link');
+      var url = null;
+      for (var i = 0; i < links.length; i++) {
+        var h = links[i].getAttribute('href');
+        if (h && h.indexOf(pathMatch) >= 0) { url = links[i].href || h; break; }
+      }
+      /* Fallback: se il <link> non e' in pagina, prova il path canonico. */
+      if (!url) url = './src/' + pathMatch;
+      if (!global.fetch) return Promise.resolve('');
+      return global.fetch(url)
+        .then(function (r) { return r.ok ? r.text() : ''; })
+        .catch(function () { return ''; });
+    }
+
     return Promise.all([
       fetchModuleSources(),
-      buildLogoCSS()
+      buildLogoCSS(),
+      fetchCssText('design-tokens.css'),
+      fetchCssText('slides.css')
     ]).then(function (res) {
       var mods = res[0];
       var logoCSS = res[1];
+      var tokensCss = res[2];
+      var slidesCss = res[3];
 
       var rendererSrc = mods.renderer;
       var engineSrc = mods.engine;
@@ -457,7 +516,14 @@
          non animerebbe. In pratica il fetch riesce quasi sempre. */
       var hasModules = !!(rendererSrc && engineSrc);
 
-      var css = buildCSS() + logoCSS;
+      /* CSS dell'export: base (reset + layout deck/landing + chrome) da
+         buildCSS(); poi i FILE REALI design-tokens.css + slides.css
+         inlinati come fonte unica di verita' per l'aspetto delle slide
+         (l'export resta identico all'anteprima). logoCSS per ultimo: i
+         --logo-src come data:URI sovrascrivono i path ../assets. Se il
+         fetch fallisce (es. file://) tokensCss/slidesCss sono '' e si
+         ricade sulle regole di buildCSS(). */
+      var css = buildCSS() + tokensCss + slidesCss + logoCSS;
       var dataJson = jsonForScript(models);
 
       /* Script di avvio: ricostruisce window.OFG con renderer+engine,
