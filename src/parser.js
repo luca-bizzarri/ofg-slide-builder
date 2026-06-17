@@ -31,7 +31,8 @@
     'quote',    // citazione grande
     'image',    // foto a piena pagina
     'split',    // testo + foto affiancati
-    'closing'   // chiusura / call to action
+    'closing',  // chiusura / call to action
+    'table'     // tabella dati (da Excel/CSV/incolla)
   ];
 
   /* Temi ammessi. */
@@ -48,7 +49,8 @@
     quote: 'dark',
     image: 'dark',
     split: 'light',
-    closing: 'dark'
+    closing: 'dark',
+    table: 'light'
   };
 
   /* --------------------------------------------------------
@@ -121,7 +123,9 @@
       immagine: 'image',
       duo: 'split',
       end: 'closing',
-      chiusura: 'closing'
+      chiusura: 'closing',
+      tabella: 'table',
+      tab: 'table'
     };
     if (aliases[t]) t = aliases[t];
     return SLIDE_TYPES.indexOf(t) !== -1 ? t : null;
@@ -134,6 +138,46 @@
     if (t === 'nero' || t === 'scuro' || t === 'black') t = 'dark';
     if (t === 'bianco' || t === 'chiaro') t = 'light';
     return THEMES.indexOf(t) !== -1 ? t : null;
+  }
+
+  /* Parsa le opzioni di inquadratura foto da una stringa tipo
+     "{fit:cover; pos:60,30; zoom:1.2}". Campi tutti opzionali. */
+  function parseImageOpts(raw) {
+    var inner = String(raw).replace(/^\{/, '').replace(/\}$/, '');
+    var opts = {};
+    inner.split(';').forEach(function (pair) {
+      var idx = pair.indexOf(':');
+      if (idx === -1) return;
+      var k = pair.slice(0, idx).trim().toLowerCase();
+      var v = pair.slice(idx + 1).trim();
+      if (k === 'fit') {
+        if (v === 'cover' || v === 'contain') opts.fit = v;
+      } else if (k === 'pos') {
+        var p = v.split(',');
+        var x = parseFloat(p[0]), y = parseFloat(p[1]);
+        if (!isNaN(x)) opts.posX = Math.max(0, Math.min(100, x));
+        if (!isNaN(y)) opts.posY = Math.max(0, Math.min(100, y));
+      } else if (k === 'zoom') {
+        var z = parseFloat(v);
+        if (!isNaN(z)) opts.zoom = Math.max(1, Math.min(5, z));
+      }
+    });
+    return opts;
+  }
+
+  /* Divide una riga di tabella markdown in celle, rispettando le
+     pipe escapate "\|" e rimuovendo le pipe di bordo. */
+  function splitTableRow(line) {
+    var s = line.trim().replace(/^\|/, '').replace(/\|$/, '');
+    var out = [], cur = '';
+    for (var i = 0; i < s.length; i++) {
+      var ch = s.charAt(i);
+      if (ch === '\\' && s.charAt(i + 1) === '|') { cur += '|'; i++; continue; }
+      if (ch === '|') { out.push(cur.trim()); cur = ''; continue; }
+      cur += ch;
+    }
+    out.push(cur.trim());
+    return out;
   }
 
   /* --------------------------------------------------------
@@ -181,6 +225,8 @@
       bullets: [],       // string[] HTML inline
       kpi: [],           // [{ v: string, k: string }]
       image: '',         // path o url (stringa grezza)
+      imageOpts: null,   // { fit, posX, posY, zoom } inquadratura foto (opzionale)
+      table: null,       // { headers:[], rows:[[]] } per il tipo 'table'
       theme: null,       // riempito sotto in base a tipo/direttiva
       topic: '',         // raggruppamento colonna in modalita' landing
       note: '',          // note presentatore (non mostrate nelle slide)
@@ -189,6 +235,7 @@
 
     var lines = block.split(/\r?\n/);
     var bodyParts = [];   // paragrafi accumulati per 'body'
+    var tableRows = [];   // righe di tabella accumulate (tipo 'table')
     var explicitTheme = null;
 
     for (var i = 0; i < lines.length; i++) {
@@ -223,10 +270,22 @@
         continue;
       }
 
-      /* 2) Immagine markdown ![alt](path) -> campo image */
-      var img = line.match(/^!\[[^\]]*\]\(([^)]+)\)/);
+      /* 2) Immagine markdown ![alt](path){opzioni} -> image + imageOpts */
+      var img = line.match(/^!\[[^\]]*\]\(([^)]+)\)\s*(\{[^}]*\})?/);
       if (img) {
         slide.image = img[1].trim();
+        if (img[2]) slide.imageOpts = parseImageOpts(img[2]);
+        continue;
+      }
+
+      /* 2b) Righe di tabella: SOLO quando il tipo e' 'table', cosi' le
+         pipe non vengono scambiate per KPI. Salta la riga separatore. */
+      if (slide.type === 'table' && line.indexOf('|') !== -1) {
+        var cells = splitTableRow(line);
+        var isSep = cells.length > 0 && cells.every(function (c) {
+          return /^:?-+:?$/.test(c);
+        });
+        if (!isSep) tableRows.push(cells.map(parseInline));
         continue;
       }
 
@@ -274,6 +333,11 @@
     /* Corpo: paragrafi separati da newline (il renderer li
        spezza su \n in <p> distinti). */
     slide.body = bodyParts.join('\n');
+
+    /* Tabella: prima riga = intestazioni, righe successive = dati. */
+    if (slide.type === 'table' && tableRows.length) {
+      slide.table = { headers: tableRows[0], rows: tableRows.slice(1) };
+    }
 
     /* Fallback del tipo: se non dichiarato, inferiamo dal contenuto. */
     if (!slide.type) {
