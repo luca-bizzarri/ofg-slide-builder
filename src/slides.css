@@ -667,3 +667,52 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================
+   TABELLA DATI (tipo 'table') — on-brand, intestazione gialla.
+   ============================================================ */
+.slide--table .slide__inner { align-items: flex-start; }
+
+.table-wrap {
+  width: 100%;
+  max-height: 64vh;
+  overflow: auto;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(13px, 1.35vw, 18px);
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: clamp(8px, 1vw, 14px) clamp(10px, 1.2vw, 18px);
+  border-bottom: 1px solid var(--hairline);
+  vertical-align: top;
+}
+
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--accent);          /* giallo brand */
+  color: #000;                         /* il giallo vuole testo nero */
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.data-table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--fg) 7%, transparent);
+}
+
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+/* Animazione d'ingresso: la tabella usa .reveal come gli altri blocchi. */
