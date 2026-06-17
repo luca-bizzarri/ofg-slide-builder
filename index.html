@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="./src/slides.css">
   <link rel="stylesheet" href="./src/editor.css">
   <link rel="stylesheet" href="./src/images.css">
+  <link rel="stylesheet" href="./src/cropper.css">
 </head>
 <body>
   <!-- Shell applicazione: toolbar in alto, due pannelli sotto. -->
@@ -35,6 +36,23 @@
         <input type="file" id="pptx-input" class="file-input"
                accept=".pptx" aria-label="Importa PowerPoint">
         <label for="pptx-input" class="btn" role="button" tabindex="0">Importa PPT</label>
+      </div>
+
+      <!-- Importa foglio di calcolo (.xlsx/.xls/.csv) come tabella -->
+      <div class="toolbar__group">
+        <input type="file" id="xlsx-input" class="file-input"
+               accept=".xlsx,.xls,.csv" aria-label="Importa Excel">
+        <label for="xlsx-input" class="btn" role="button" tabindex="0">Importa Excel</label>
+      </div>
+
+      <!-- Inserisci una tabella d'esempio -->
+      <div class="toolbar__group">
+        <button type="button" id="btn-add-table" class="btn">+ Tabella</button>
+      </div>
+
+      <!-- Modalita' di lavoro visuale (ritaglio foto + drop su slide) -->
+      <div class="toolbar__group">
+        <button type="button" id="btn-layout" class="btn" aria-pressed="false">Layout</button>
       </div>
 
       <!-- Modalita' deck / landing -->
@@ -85,6 +103,12 @@
           <summary class="imglib-panel__head">Immagini · trascina o incolla, clicca per inserire</summary>
           <div id="image-gallery" class="imglib"></div>
         </details>
+
+        <!-- Riordino slide via drag&drop sulle miniature. -->
+        <details class="strip-panel" id="strip-panel">
+          <summary class="strip-panel__head">Ordina slide · trascina per riordinare</summary>
+          <div id="slide-strip" class="slide-strip"></div>
+        </details>
       </section>
 
       <!-- Pannello anteprima (destra) -->
@@ -114,6 +138,12 @@
   <script src="./src/vendor/jszip.min.js"></script>
   <script src="./src/images.js"></script>
   <script src="./src/import-pptx.js"></script>
+  <!-- Tabelle (SheetJS) + riordino blocchi + cropper foto.
+       xlsx prima di import-table.js (che la usa); tutti prima di editor.js. -->
+  <script src="./src/vendor/xlsx.full.min.js"></script>
+  <script src="./src/import-table.js"></script>
+  <script src="./src/blocks.js"></script>
+  <script src="./src/cropper.js"></script>
   <script src="./src/editor.js"></script>
 </body>
 </html>
