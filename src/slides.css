@@ -1,13 +1,22 @@
 /* ============================================================
-   slides.css — Sistema visivo OFG (editoriale, bold, on-brand)
+   slides.css — Sistema visivo OFG · variante v2
+   "REPORT PREMIUM / DASHBOARD"
    --------------------------------------------------------------
    100% client-side, 16:9, full-viewport (100dvh), responsive.
-   Brand: SOLO nero #000 / bianco #fff / giallo #ffff00. Raleway.
+   Brand: SOLO nero #000 / bianco #fff / giallo #ffff00 (+ grigi
+   tecnici neutri come rgba di nero/bianco). Raleway.
 
-   DIREZIONE: stile editoriale svizzero. Tipografia grande e sicura,
-   griglia forte, giallo come ACCENTO PIENO (blocchi/numeri, non fili).
-   Cornice identica su ogni slide: logo in alto a sx, eyebrow+titolo,
-   numero pagina in basso a dx. Microanimazioni d'ingresso vivaci.
+   DIREZIONE: look da report di consulenza di alto livello. Ogni
+   slide e' una "pagina di dossier": una griglia chiara delimitata
+   da hairline sottili, un'intestazione con etichette di reparto e
+   micro-tipografia (codice slide, label di sezione), KPI e dati
+   incorniciati in card eleganti, tabelle curatissime. Giallo
+   RESTRAINED: filetti d'accento, tick, marcatori e una sola zona
+   "evidenziata" per slide — mai campiture invadenti. Autorevole,
+   sobrio, data-driven, ma sempre PIENO e mai vuoto: pannelli a
+   tutta pagina, ledger di metadati, watermark numerici tenui.
+   Animazioni: draw-in dei filetti, wipe dei titoli, stagger delle
+   card/righe, contatori che salgono.
    ============================================================ */
 
 /* ============================================================
@@ -18,20 +27,28 @@
   --fg: var(--ink);
   --fg-soft: var(--ink-soft);
   --accent: var(--yellow);
-  --hairline: var(--line);
+  --hairline: rgba(0, 0, 0, 0.14);
+  --hairline-strong: rgba(0, 0, 0, 0.28);
+  --panel: rgba(0, 0, 0, 0.022);
+  --panel-2: rgba(0, 0, 0, 0.045);
+  --ink-faint: rgba(0, 0, 0, 0.04);
   --logo-src: url('../assets/logo-nero.png');
 }
 .theme-dark {
   --bg: var(--black);
   --fg: var(--white);
-  --fg-soft: rgba(255, 255, 255, 0.66);
+  --fg-soft: rgba(255, 255, 255, 0.64);
   --accent: var(--yellow);
-  --hairline: var(--line-on-dark);
+  --hairline: rgba(255, 255, 255, 0.16);
+  --hairline-strong: rgba(255, 255, 255, 0.34);
+  --panel: rgba(255, 255, 255, 0.04);
+  --panel-2: rgba(255, 255, 255, 0.07);
+  --ink-faint: rgba(255, 255, 255, 0.05);
   --logo-src: url('../assets/logo-negativo.png');
 }
 
 /* ============================================================
-   2. DECK + base SLIDE + cornice
+   2. DECK + base SLIDE + cornice da dossier
    ============================================================ */
 .deck {
   position: relative;
@@ -45,18 +62,45 @@
   width: 100%;
   min-height: 100dvh;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   overflow: hidden;
   background: var(--bg);
   color: var(--fg);
-  /* fascia in alto riservata al logo: il contenuto non ci finisce sotto */
-  --frame-top: clamp(3rem, 7vh, 5.5rem);
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  /* La slide e' un CONTAINER: la tipografia fluida scala sulla LARGHEZZA
+     DELLA SLIDE (cqw), non della finestra (cqw). Cosi' i testi sono giusti
+     sia nell'anteprima ridotta dell'editor sia nell'export a tutto schermo. */
+  container-type: inline-size;
+  --fs-display: clamp(2.4rem, 8cqw, 7rem);
+  --fs-h1: clamp(2rem, 6cqw, 4.6rem);
+  --fs-h2: clamp(1.5rem, 4.2cqw, 3rem);
+  --fs-h3: clamp(1.1rem, 2.6cqw, 1.8rem);
+  --fs-lead: clamp(1rem, 2cqw, 1.5rem);
+  --fs-body: clamp(0.95rem, 1.5cqw, 1.2rem);
+  --fs-small: clamp(0.72rem, 1.1cqw, 0.92rem);
+  --fs-kpi: clamp(2.2rem, 6cqw, 5rem);
+  --slide-pad: clamp(1.4rem, 5cqw, 4.6rem);
+  /* fasce riservate alla cornice del dossier (logo top, ledger bottom) */
+  --frame-top: clamp(3.2rem, 6.4cqw, 5rem);
+  --frame-bottom: clamp(2.6rem, 5cqw, 3.6rem);
+  --gutter: clamp(1.4rem, 4.4cqw, 4.4rem);
   transition:
     background-color var(--dur-theme) var(--ease-out),
     color var(--dur-theme) var(--ease-out);
 }
 
-/* Contenitore contenuto: colonna sinistra, centrata in verticale. */
+/* Doppia cornice sottile a filo del bordo: la "pagina" del report.
+   Vive dietro tutto, non collide col contenuto (l'inner ha padding). */
+.slide::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: clamp(0.85rem, 1.5cqw, 1.4rem);
+  border: 1px solid var(--hairline);
+  pointer-events: none;
+}
+
+/* Contenitore contenuto. */
 .slide__inner {
   position: relative;
   z-index: var(--z-slide-content);
@@ -65,23 +109,23 @@
   margin-inline: auto;
   padding: var(--slide-pad);
   padding-top: calc(var(--slide-pad) + var(--frame-top));
-  padding-bottom: calc(var(--slide-pad) + var(--sp-6));
+  padding-bottom: calc(var(--slide-pad) + var(--frame-bottom));
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: flex-start;
+  align-items: stretch;
   text-align: left;
-  gap: var(--sp-4);
+  gap: var(--sp-5);
 }
 
-/* ---- LOGO: posizione FISSA in alto a sinistra, su tutte le slide. ---- */
+/* ---- LOGO: alto a sinistra, dentro la fascia testata del dossier. ---- */
 .slide__logo {
   position: absolute;
-  top: var(--slide-pad);
-  left: var(--slide-pad);
-  width: clamp(74px, 8vw, 112px);
-  height: clamp(22px, 2.6vw, 32px);
-  z-index: calc(var(--z-slide-content) + 3);
+  top: clamp(1.6rem, 2.6cqw, 2.5rem);
+  left: clamp(1.7rem, 2.8cqw, 2.7rem);
+  width: clamp(70px, 7.6cqw, 104px);
+  height: clamp(20px, 2.4cqw, 30px);
+  z-index: calc(var(--z-slide-content) + 5);
   background-image: var(--logo-src);
   background-repeat: no-repeat;
   background-position: left center;
@@ -89,43 +133,68 @@
   pointer-events: none;
 }
 
-/* ---- NUMERO PAGINA: fisso in basso a destra "NN / TOT". ---- */
+/* ---- NUMERO PAGINA: ledger in basso a destra "NN / TOT". ---- */
 .slide__pageno {
   position: absolute;
-  bottom: var(--slide-pad);
-  right: var(--slide-pad);
-  z-index: calc(var(--z-slide-content) + 3);
-  display: flex;
+  bottom: clamp(1.4rem, 2.4cqw, 2.2rem);
+  right: clamp(1.7rem, 2.8cqw, 2.7rem);
+  z-index: calc(var(--z-slide-content) + 5);
+  display: inline-flex;
   align-items: baseline;
-  gap: 0.3em;
-  font-size: var(--fs-small);
-  font-weight: var(--fw-semibold);
-  letter-spacing: var(--ls-caps);
+  gap: 0.32em;
+  padding: 0.34em 0.7em;
+  border: 1px solid var(--hairline);
+  background: var(--bg);
+  font-size: clamp(0.62rem, 0.92cqw, 0.78rem);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.16em;
   color: var(--fg-soft);
   font-variant-numeric: tabular-nums;
   pointer-events: none;
 }
 .slide__pageno b { font-weight: var(--fw-black); color: var(--fg); }
-.slide__pageno i { font-style: normal; opacity: 0.5; }
+.slide__pageno i { font-style: normal; opacity: 0.55; }
 
-/* ---- EYEBROW / KICKER: sopra-linea uppercase con blocco giallo. ---- */
+/* Ledger di reparto in basso a SINISTRA: micro-tipografia da report.
+   SOLO sui tipi a testata (text/bullets/kpi/table): l'inner e' una
+   griglia 2-righe, quindi un pseudo absolute non ne altera il flusso. */
+.slide--text .slide__inner::before,
+.slide--bullets .slide__inner::before,
+.slide--kpi .slide__inner::before,
+.slide--table .slide__inner::before {
+  content: 'OFG · CONFIDENZIALE';
+  position: absolute;
+  bottom: clamp(0.6rem, 1.6cqw, 1.4rem);
+  left: 0;
+  z-index: calc(var(--z-slide-content) + 2);
+  display: inline-flex;
+  align-items: center;
+  font-size: clamp(0.58rem, 0.84cqw, 0.72rem);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.2em;
+  color: var(--fg-soft);
+  pointer-events: none;
+}
+
+/* ---- EYEBROW / KICKER: etichetta di reparto con tick giallo. ---- */
 .eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 0.7em;
+  gap: 0.62em;
   margin: 0 0 var(--sp-2);
-  font-size: var(--fs-small);
+  font-size: clamp(0.68rem, 0.98cqw, 0.82rem);
   font-weight: var(--fw-extrabold);
   text-transform: uppercase;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.24em;
   color: var(--fg);
 }
 .eyebrow::before {
   content: '';
-  width: 1.6em;
-  height: 0.72em;
+  width: 0.62em;
+  height: 0.62em;
   background: var(--accent);
   flex: 0 0 auto;
+  transform: rotate(45deg);
 }
 
 /* ============================================================
@@ -134,20 +203,19 @@
 .h2 {
   margin: 0;
   font-size: var(--fs-h2);
-  font-weight: var(--fw-black);
-  line-height: 1.02;
-  letter-spacing: -0.02em;
-  text-transform: uppercase;
+  font-weight: var(--fw-extrabold);
+  line-height: 1.04;
+  letter-spacing: -0.018em;
   text-wrap: balance;
   color: var(--fg);
 }
 
-/* Barretta gialla d'accento: spessa, decisa (wipe in ingresso). */
+/* Filetto giallo d'accento: SOTTILE e preciso (draw-in da sinistra). */
 .bar {
   display: block;
-  width: clamp(56px, 6vw, 84px);
-  height: 8px;
-  margin: var(--sp-3) 0 var(--sp-2);
+  width: clamp(40px, 4.4cqw, 60px);
+  height: 3px;
+  margin: var(--sp-3) 0 var(--sp-1);
   background: var(--accent);
   transform-origin: left center;
 }
@@ -156,298 +224,702 @@
   margin: 0;
   font-size: var(--fs-lead);
   font-weight: var(--fw-light);
-  line-height: 1.3;
+  line-height: 1.34;
   color: var(--fg-soft);
   max-width: 52ch;
 }
 
-.body { display: flex; flex-direction: column; gap: var(--sp-4); max-width: 60ch; }
+.body { display: flex; flex-direction: column; gap: var(--sp-4); }
 .body p {
   margin: 0;
   font-size: var(--fs-body);
   font-weight: var(--fw-regular);
-  line-height: var(--lh-body);
+  line-height: 1.55;
   color: var(--fg);
+  overflow-wrap: break-word;
 }
 
-.slide strong { font-weight: var(--fw-extrabold); }
+.slide strong { font-weight: var(--fw-bold); }
 .slide em { font-style: italic; }
 .slide mark {
   background: var(--accent);
   color: #000;
-  padding: 0.02em 0.22em;
+  padding: 0.02em 0.26em;
   font-weight: var(--fw-bold);
   box-decoration-break: clone;
 }
 .slide code {
   font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-  font-size: 0.88em;
-  padding: 0.08em 0.4em;
-  background: color-mix(in srgb, var(--fg) 10%, transparent);
-  border-radius: 4px;
+  font-size: 0.86em;
+  padding: 0.08em 0.42em;
+  background: var(--panel-2);
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+}
+.slide a { color: inherit; text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+
+/* ============================================================
+   4. LAYOUT A DOSSIER: testata + corpo a pannelli
+   --------------------------------------------------------------
+   text/bullets/kpi/table condividono una testata superiore con
+   etichetta-reparto, titolo, filetto e codice slide a destra; sotto
+   un pannello-contenuto incorniciato che riempie il canvas.
+   ============================================================ */
+.slide--text .slide__inner,
+.slide--bullets .slide__inner,
+.slide--kpi .slide__inner,
+.slide--table .slide__inner {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: clamp(1.1rem, 2.4cqw, 1.9rem);
+  align-content: stretch;
+}
+
+.slide__head {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  column-gap: var(--gutter);
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--hairline-strong);
+}
+.slide__head .eyebrow { grid-column: 1; }
+.slide__head .h2 {
+  grid-column: 1;
+  font-size: clamp(1.6rem, 3.3cqw, 2.7rem);
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+.slide__head .bar { grid-column: 1; }
+.slide__head .subtitle {
+  grid-column: 1;
+  margin-top: var(--sp-2);
+  font-size: clamp(0.98rem, 1.6cqw, 1.28rem);
+}
+/* Codice-slide a destra della testata (numerazione da report). */
+.slide__head::after {
+  content: 'OFG / REPORT H1·26';
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: end;
+  justify-self: end;
+  font-size: clamp(0.6rem, 0.84cqw, 0.72rem);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-soft);
+  white-space: nowrap;
+}
+
+.slide__content {
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 /* ============================================================
-   4. LAYOUT PER TIPO
+   5. LAYOUT PER TIPO
    ============================================================ */
 
-/* ---- COVER: hero editoriale. ---- */
-.slide--cover .slide__inner { gap: var(--sp-3); }
-.cover__title {
-  margin: 0;
-  font-size: var(--fs-display);
-  font-weight: var(--fw-black);
-  line-height: 0.92;
-  letter-spacing: -0.03em;
-  text-transform: uppercase;
-  text-wrap: balance;
-  max-width: 20ch;
+/* ---- COVER: frontespizio di dossier. Titolo + riga metadati a fondo. ---- */
+.slide--cover .slide__inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--sp-3);
 }
-.slide--cover .bar { height: 10px; width: clamp(72px, 7vw, 104px); margin-top: var(--sp-4); }
-.slide--cover .subtitle { font-size: var(--fs-lead); max-width: 46ch; margin-top: var(--sp-2); }
-
-/* ---- SECTION: divider con grande numero di capitolo giallo. ---- */
-.slide--section .slide__inner { gap: var(--sp-2); }
-.section__num {
-  margin: 0 0 var(--sp-2);
-  font-size: clamp(5rem, 17vw, 13rem);
+.cover__title {
+  position: relative;
+  z-index: 2; /* sempre sopra il watermark ::after (qualunque sia il contesto) */
+  margin: 0;
+  font-size: clamp(2.6rem, 7cqw, 6rem);
+  font-weight: var(--fw-black);
+  line-height: 0.96;
+  letter-spacing: -0.028em;
+  text-wrap: balance;
+  max-width: 17ch;
+}
+.slide--cover .bar { height: 4px; width: clamp(56px, 6cqw, 88px); margin-top: var(--sp-4); }
+.slide--cover .subtitle { font-size: var(--fs-lead); max-width: 46ch; margin-top: var(--sp-1); }
+/* Riga di metadati a piè di frontespizio, incorniciata: riempie il fondo.
+   Sostituisce il footer generico (::before) su cover. */
+.slide--cover .slide__inner::before {
+  content: 'DOCUMENTO · CONFIDENZIALE      EDIZIONE · 01      DATA · 06 / 2026';
+  position: absolute;
+  left: 0;
+  right: clamp(5rem, 12cqw, 9rem);
+  bottom: clamp(0.6rem, 1.6cqw, 1.4rem);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--hairline-strong);
+  font-size: clamp(0.58rem, 0.9cqw, 0.76rem);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.12em;
+  color: var(--fg-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: none;
+}
+.slide--cover .slide__inner::before { display: block; }
+/* Watermark numerico tenue del frontespizio (riempie, on-brand). */
+.slide--cover::after {
+  content: '01';
+  position: absolute;
+  z-index: 0;
+  right: clamp(1.5rem, 4cqw, 4rem);
+  top: clamp(2.6rem, 5cqw, 4.4rem);
+  font-size: clamp(7rem, 26cqw, 22rem);
   font-weight: var(--fw-black);
   line-height: 0.8;
   letter-spacing: -0.05em;
-  color: var(--accent);
+  color: var(--ink-faint);
+  pointer-events: none;
 }
+
+/* ---- SECTION: divider di capitolo. Numero grande a sx (griglia su
+   children flat), poi etichetta/titolo/filetto/sottotitolo a dx. ---- */
+.slide--section .slide__inner {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  grid-template-rows: 1fr auto auto auto auto 1fr;
+  column-gap: clamp(1.6rem, 4.5cqw, 4.5rem);
+  row-gap: var(--sp-2);
+  align-content: center;
+  justify-content: start;
+}
+/* Numero gigante: colonna 1, centrato sull'intera altezza. */
+.section__num {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  align-self: center;
+  margin: 0;
+  padding-right: clamp(1.4rem, 3.2cqw, 3rem);
+  border-right: 1px solid var(--hairline-strong);
+  font-size: clamp(7rem, 21cqw, 17rem);
+  font-weight: var(--fw-black);
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+/* eyebrow/titolo/bar/subtitle nella seconda colonna, righe centrali
+   2..5: cosi' il gruppo testo resta compatto e centrato accanto al
+   numero (gli 1fr in alto e in basso assorbono lo spazio). */
+.slide--section .eyebrow { grid-column: 2; grid-row: 2; align-self: end; margin-bottom: var(--sp-3); }
+.section__title { grid-column: 2; grid-row: 3; }
+.slide--section .bar { grid-column: 2; grid-row: 4; }
+.slide--section .subtitle { grid-column: 2; grid-row: 5; align-self: start; }
 .section__title {
   margin: 0;
-  font-size: var(--fs-h1);
-  font-weight: var(--fw-black);
-  line-height: 1.0;
-  letter-spacing: -0.02em;
-  text-transform: uppercase;
+  font-size: clamp(1.7rem, 3.6cqw, 3rem);
+  font-weight: var(--fw-extrabold);
+  line-height: 1.06;
+  letter-spacing: -0.018em;
   text-wrap: balance;
-  max-width: 18ch;
+  max-width: 20ch;
 }
+.slide--section .bar { height: 4px; }
 
-/* ---- TEXT: titolo forte + colonna leggibile. ---- */
-.slide--text .slide__inner { gap: var(--sp-3); }
-.slide--text .body { margin-top: var(--sp-3); }
-
-/* ---- BULLETS: elenco con marcatore giallo pieno. ---- */
-.bullets {
-  list-style: none;
-  margin: var(--sp-4) 0 0;
-  padding: 0;
+/* ---- TEXT: testata + pannello lead, testo centrato + nota a fondo. ---- */
+.slide--text .slide__content {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
-  max-width: 56ch;
-  width: 100%;
-}
-.bullets li {
+  justify-content: center;
   position: relative;
-  padding-left: 1.9em;
-  font-size: var(--fs-lead);
-  font-weight: var(--fw-medium);
-  line-height: 1.25;
-  color: var(--fg);
+  border: 1px solid var(--hairline);
+  background: var(--panel);
 }
-.bullets li::before {
+.slide--text .body {
+  gap: var(--sp-5);
+  padding: clamp(2rem, 4.4cqw, 3.6rem) clamp(1.6rem, 3.4cqw, 3rem);
+  max-width: none;
+}
+/* Striscia-nota a fondo pannello: micro-tipografia da report (riempie). */
+.slide--text .slide__content::after {
+  content: 'NOTA OPERATIVA  ·  OFG STRATEGY';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: clamp(0.7rem, 1.4cqw, 1rem) clamp(1.6rem, 3.4cqw, 3rem);
+  border-top: 1px solid var(--hairline);
+  background: var(--panel-2);
+  font-size: clamp(0.6rem, 0.86cqw, 0.74rem);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.2em;
+  color: var(--fg-soft);
+}
+.slide--text .body p {
+  position: relative;
+  padding-left: clamp(1.4rem, 2.4cqw, 2.1rem);
+  max-width: 62ch;
+}
+.slide--text .body p::before {
   content: '';
   position: absolute;
   left: 0;
-  top: 0.42em;
-  width: 0.85em;
-  height: 0.85em;
+  top: 0.55em;
+  width: clamp(0.7rem, 1.1cqw, 0.95rem);
+  height: 2px;
   background: var(--accent);
 }
+.slide--text .body p:first-child {
+  font-size: clamp(1.3rem, 2.5cqw, 2rem);
+  font-weight: var(--fw-medium);
+  line-height: 1.32;
+  letter-spacing: -0.008em;
+  color: var(--fg);
+}
+.slide--text .body p:first-child::before { top: 0.62em; width: clamp(1.1rem, 1.8cqw, 1.5rem); height: 3px; }
 
-/* ---- KPI: numeri ENORMI, accento giallo. ---- */
-.kpi-grid {
-  margin-top: var(--sp-5);
+/* ---- BULLETS: matrice di card incorniciate, numerate. ---- */
+.bullets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   width: 100%;
+  height: 100%;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
-  gap: var(--sp-5) var(--sp-6);
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0;
+  border: 1px solid var(--hairline);
+  border-bottom: none;
+  border-right: none;
+}
+.bullet {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: clamp(1.1rem, 2.4cqw, 2rem);
+  padding: clamp(1.4rem, 3cqw, 2.4rem) clamp(1.4rem, 2.8cqw, 2.4rem);
+  border-right: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--bg);
+}
+.bullet::before {
+  /* tick d'accento ancorato in alto a sx di ogni card */
+  content: '';
+  position: absolute;
+  top: clamp(1.1rem, 2.2cqw, 1.7rem);
+  left: clamp(1.4rem, 2.8cqw, 2.4rem);
+  width: clamp(18px, 2.4cqw, 28px);
+  height: 3px;
+  background: var(--accent);
+}
+.bullet__n {
+  flex: 0 0 auto;
+  font-size: clamp(1.8rem, 3.4cqw, 3rem);
+  font-weight: var(--fw-black);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  padding-right: clamp(1rem, 2cqw, 1.6rem);
+  border-right: 1px solid var(--hairline-strong);
+}
+.bullet__t {
+  font-size: clamp(1rem, 1.6cqw, 1.28rem);
+  font-weight: var(--fw-medium);
+  line-height: 1.36;
+  color: var(--fg);
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+.bullets:has(.bullet:only-child) { grid-template-columns: 1fr; }
+
+/* ---- KPI: scorecard incorniciate in griglia, numeri grandi + delta. ---- */
+.kpi-grid {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border: 1px solid var(--hairline);
+  border-right: none;
 }
 .kpi-card {
   position: relative;
-  padding-top: var(--sp-4);
-  border-top: 4px solid var(--accent);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding: clamp(3.2rem, 6cqw, 4.4rem) clamp(1.2rem, 2.4cqw, 1.9rem) clamp(1.3rem, 2.8cqw, 2.2rem);
+  border-right: 1px solid var(--hairline);
+  background: var(--bg);
+  overflow: hidden;
 }
-.kpi-card__v {
-  font-size: clamp(2.6rem, 6.4vw, 5.2rem);
-  font-weight: var(--fw-black);
-  line-height: 0.95;
-  letter-spacing: -0.03em;
-  color: var(--fg);
-}
-.kpi-card__k {
-  margin-top: var(--sp-3);
-  font-size: var(--fs-small);
-  font-weight: var(--fw-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
+.kpi-card::before {
+  /* etichetta-indice "K01" in alto, da scorecard */
+  content: 'KPI';
+  position: absolute;
+  top: clamp(1rem, 2cqw, 1.5rem);
+  left: clamp(1.2rem, 2.4cqw, 1.9rem);
+  font-size: clamp(0.58rem, 0.82cqw, 0.7rem);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.18em;
   color: var(--fg-soft);
 }
+.kpi-card::after {
+  /* tick d'accento sotto l'etichetta */
+  content: '';
+  position: absolute;
+  top: clamp(2.05rem, 3.4cqw, 2.7rem);
+  left: clamp(1.2rem, 2.4cqw, 1.9rem);
+  width: clamp(16px, 2.2cqw, 24px);
+  height: 3px;
+  background: var(--accent);
+}
+.kpi-card__v {
+  font-size: clamp(2.2rem, 4.6cqw, 3.7rem);
+  font-weight: var(--fw-black);
+  line-height: 0.96;
+  letter-spacing: -0.035em;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+.kpi-card__k {
+  font-size: clamp(0.74rem, 1.05cqw, 0.92rem);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1.28;
+  color: var(--fg-soft);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--hairline);
+}
 
-/* ---- QUOTE: editoriale, virgolettone giallo. ---- */
-.slide--quote .slide__inner { justify-content: center; gap: var(--sp-2); }
+/* ---- QUOTE: pannello citazione da report, virgolette gialle. ---- */
+.slide--quote .slide__inner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: clamp(1.4rem, 3.5cqw, 3.4rem);
+}
+.slide--quote .eyebrow {
+  grid-column: 1 / -1;
+  align-self: start;
+}
 .quote__mark {
+  grid-column: 1;
+  align-self: start;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(5rem, 12vw, 9rem);
-  line-height: 0.6;
-  height: 0.55em;
+  font-size: clamp(7rem, 17cqw, 14rem);
+  line-height: 0.74;
+  height: 0.56em;
   color: var(--accent);
   font-weight: 700;
 }
 .quote__text {
+  grid-column: 2;
   margin: 0;
-  font-size: clamp(1.6rem, 3.6vw, 3rem);
+  font-size: clamp(1.7rem, 3.7cqw, 3.1rem);
   font-weight: var(--fw-semibold);
-  line-height: 1.18;
-  letter-spacing: -0.01em;
+  line-height: 1.2;
+  letter-spacing: -0.014em;
   color: var(--fg);
-  max-width: 24ch;
+  max-width: 26ch;
   text-wrap: balance;
 }
 .quote__cite {
-  margin: var(--sp-4) 0 0;
+  grid-column: 2;
+  margin: var(--sp-5) 0 0;
   display: inline-flex;
   align-items: center;
   gap: 0.7em;
-  font-size: var(--fs-small);
+  font-size: clamp(0.74rem, 1.05cqw, 0.9rem);
   font-weight: var(--fw-bold);
   text-transform: uppercase;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   color: var(--fg-soft);
 }
 .quote__cite::before {
   content: '';
-  width: 2.2em;
-  height: 3px;
+  width: 2.4em;
+  height: 2px;
   background: var(--accent);
 }
 
-/* ---- IMAGE: foto piena + gradiente, titolo in overlay basso. ---- */
-.slide--image { padding: 0; }
+/* ---- IMAGE: foto piena + gradiente, caption-card in overlay basso. ---- */
+.slide--image::before { display: none; }
 .slide--image > .media {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   z-index: 0;
+  /* Dashboard on-brand SEMPRE dietro (fallback se la foto manca). */
+  background-color: #0b0b0b;
+  background-image:
+    linear-gradient(rgba(255, 255, 0, 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 0, 0.10) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 7% 12%, 7% 12%, 1.4% 2.4%, 1.4% 2.4%;
+  background-position: center;
 }
+/* barre del mock dietro la foto (visibili solo se la foto manca) */
+.slide--image > .media::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  left: 8%;
+  right: 8%;
+  bottom: 16%;
+  height: 46%;
+  background:
+    linear-gradient(to top, var(--yellow) 0 38%, transparent 38%) 0 100% / 9% 38% no-repeat,
+    linear-gradient(to top, rgba(255,255,0,0.5) 0 60%, transparent 60%) 16% 100% / 9% 60% no-repeat,
+    linear-gradient(to top, var(--yellow) 0 48%, transparent 48%) 32% 100% / 9% 48% no-repeat,
+    linear-gradient(to top, rgba(255,255,0,0.5) 0 82%, transparent 82%) 48% 100% / 9% 82% no-repeat,
+    linear-gradient(to top, var(--yellow) 0 64%, transparent 64%) 64% 100% / 9% 64% no-repeat,
+    linear-gradient(to top, rgba(255,255,0,0.5) 0 100%, transparent 100%) 80% 100% / 9% 100% no-repeat,
+    linear-gradient(to top, var(--yellow) 0 72%, transparent 72%) 96% 100% / 9% 72% no-repeat;
+  pointer-events: none;
+}
+.slide--image > .media .media__img { background: transparent; }
 .slide--image > .media::after {
   content: '';
   position: absolute;
   inset: 0;
   z-index: 1;
   background:
-    linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0) 56%),
-    linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 26%);
+    linear-gradient(to top, rgba(0,0,0,0.86) 0%, rgba(0,0,0,0.12) 52%, rgba(0,0,0,0) 78%),
+    linear-gradient(to bottom, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0) 30%);
   pointer-events: none;
 }
 .slide--image .slide__inner {
+  display: flex;
+  flex-direction: column;
   justify-content: flex-end;
+  align-items: flex-start;
   min-height: 100dvh;
+  max-width: none;
 }
+/* Caption ancorata in basso a sx, in un blocco con filetto giallo a
+   misura del contenuto (non l'intera colonna). */
+.slide--image .slide__inner {
+  padding-left: calc(var(--slide-pad) + clamp(1.2rem, 2.6cqw, 2.2rem));
+}
+.slide--image .slide__inner::after {
+  content: '';
+  position: absolute;
+  left: var(--slide-pad);
+  width: 3px;
+  bottom: calc(var(--slide-pad) + var(--frame-bottom) - 0.2rem);
+  height: clamp(7rem, 22vh, 12rem);
+  background: var(--accent);
+  pointer-events: none;
+}
+.slide--image .eyebrow,
+.slide--image .h2,
+.slide--image .subtitle { max-width: 46ch; }
+.slide--image .eyebrow::before { display: none; }
 .slide--image .h2,
 .slide--image .subtitle { color: var(--white); }
-.slide--image .h2 { font-size: var(--fs-h1); }
-.slide--image .eyebrow,
-.slide--image .slide__pageno { color: rgba(255,255,255,0.82); }
+.slide--image .h2 { font-size: clamp(2rem, 4.6cqw, 3.6rem); font-weight: var(--fw-black); }
+.slide--image .eyebrow { color: #fff; }
+.slide--image .eyebrow::before { background: var(--accent); }
+.slide--image .slide__pageno {
+  color: rgba(255,255,255,0.85);
+  background: rgba(0,0,0,0.4);
+  border-color: rgba(255,255,255,0.28);
+}
 .slide--image .slide__pageno b { color: #fff; }
+.slide--image .slide__foot-meta { color: rgba(255,255,255,0.85); }
+.slide--image .slide__head-rule { background: rgba(255,255,255,0.3); }
 
-/* ---- SPLIT: testo 55% / foto 45%. ---- */
-.slide--split { padding: 0; }
+/* ---- SPLIT: pannello dati (sx) + media incorniciato (dx). ---- */
 .slide--split .slide__inner {
   flex-direction: row;
   align-items: stretch;
   justify-content: flex-start;
-  gap: 0;
-  max-width: none;
-  margin: 0;
-  padding: 0;
+  gap: clamp(1.6rem, 3.6cqw, 3.4rem);
 }
 .split__text {
-  flex: 1 1 55%;
+  flex: 1 1 50%;
   min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: var(--sp-3);
-  padding: var(--slide-pad);
-  padding-top: calc(var(--slide-pad) + var(--frame-top));
+}
+.split__text .body { gap: var(--sp-4); }
+.split__text .body p {
+  position: relative;
+  padding-left: clamp(1.2rem, 2cqw, 1.8rem);
+  font-size: clamp(1rem, 1.6cqw, 1.3rem);
+  line-height: 1.5;
+}
+.split__text .body p::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: clamp(0.7rem, 1.1cqw, 0.95rem);
+  height: 2px;
+  background: var(--accent);
 }
 .split__media {
-  flex: 1 1 45%;
+  flex: 1 1 50%;
   min-width: 0;
   position: relative;
   overflow: hidden;
-  background: var(--black);
+  border: 1px solid var(--hairline-strong);
+  /* Dashboard on-brand SEMPRE dietro: se la foto manca/si rompe
+     (broken img trasparente), resta un mock di report, non un buco. */
+  background-color: #0b0b0b;
+  background-image:
+    linear-gradient(rgba(255, 255, 0, 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 0, 0.10) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 11% 16%, 11% 16%, 2.2% 3.2%, 2.2% 3.2%;
+  background-position: center;
 }
 .split__media .media,
 .split__media .media__img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.split__media .media { background: transparent; }
 .split__media .media__img { object-fit: cover; }
+/* barre + etichetta del mock, dietro la (eventuale) foto */
+.split__media::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  left: 10%;
+  right: 10%;
+  bottom: 20%;
+  height: 40%;
+  background:
+    linear-gradient(to top, var(--yellow) 0 38%, transparent 38%) 0 100% / 9% 38% no-repeat,
+    linear-gradient(to top, rgba(255,255,0,0.5) 0 60%, transparent 60%) 16% 100% / 9% 60% no-repeat,
+    linear-gradient(to top, var(--yellow) 0 48%, transparent 48%) 32% 100% / 9% 48% no-repeat,
+    linear-gradient(to top, rgba(255,255,0,0.5) 0 82%, transparent 82%) 48% 100% / 9% 82% no-repeat,
+    linear-gradient(to top, var(--yellow) 0 64%, transparent 64%) 64% 100% / 9% 64% no-repeat,
+    linear-gradient(to top, rgba(255,255,0,0.5) 0 100%, transparent 100%) 80% 100% / 9% 100% no-repeat,
+    linear-gradient(to top, var(--yellow) 0 72%, transparent 72%) 96% 100% / 9% 72% no-repeat;
+  pointer-events: none;
+}
+.split__media::after {
+  content: 'OFG · LIVE DASHBOARD';
+  position: absolute;
+  z-index: 0;
+  left: 10%;
+  bottom: 13%;
+  padding-top: 0.6em;
+  border-top: 1px solid rgba(255, 255, 0, 0.5);
+  width: 80%;
+  font-family: var(--font-sans);
+  font-size: clamp(0.62rem, 1cqw, 0.82rem);
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: rgba(255, 255, 0, 0.9);
+  pointer-events: none;
+}
+.slide--split .slide__pageno {
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(0,0,0,0.42);
+  border-color: rgba(255,255,255,0.28);
+}
+.slide--split .slide__pageno b { color: #fff; }
 
-/* ---- CLOSING: chiusura centrata. ---- */
+/* ---- CLOSING: frontespizio di chiusura, centrato, con metadati. ---- */
 .slide--closing .slide__inner {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  text-align: center;
   justify-content: center;
+  text-align: center;
   gap: var(--sp-3);
 }
 .slide--closing .eyebrow { align-self: center; }
+/* Watermark di chiusura: grande lettering tenue dietro al titolo. */
+.slide--closing::after {
+  content: 'OFG';
+  position: absolute;
+  z-index: 0;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -54%);
+  font-size: clamp(10rem, 34cqw, 30rem);
+  font-weight: var(--fw-black);
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  color: var(--ink-faint);
+  pointer-events: none;
+  white-space: nowrap;
+}
 .closing__title {
   margin: 0;
-  font-size: var(--fs-display);
+  font-size: clamp(3rem, 9cqw, 7rem);
   font-weight: var(--fw-black);
-  line-height: 0.92;
+  line-height: 0.94;
   letter-spacing: -0.03em;
-  text-transform: uppercase;
   text-wrap: balance;
 }
-.slide--closing .bar { margin-inline: auto; transform-origin: center; width: clamp(80px, 8vw, 120px); }
-.slide--closing .subtitle { text-align: center; max-width: 46ch; }
+.slide--closing .bar { margin: var(--sp-4) auto var(--sp-1); transform-origin: center; width: clamp(64px, 7cqw, 96px); height: 4px; }
+.slide--closing .subtitle { text-align: center; max-width: 48ch; margin-inline: auto; }
+/* Riga metadati a fondo (sostituisce il footer generico). */
+.slide--closing .slide__inner::before {
+  content: 'FINE DEL DOCUMENTO   ·   OFG REPORT H1 · 2026';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: clamp(0.6rem, 1.6cqw, 1.4rem);
+  text-align: center;
+  font-size: clamp(0.58rem, 0.9cqw, 0.76rem);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.16em;
+  color: var(--fg-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: none;
+}
 
-/* ---- TABLE: titolo + tabella dati on-brand. ---- */
-.slide--table .slide__inner { gap: var(--sp-3); }
+/* ---- TABLE: tabella dati curatissima dentro pannello. ---- */
 .table-wrap {
   width: 100%;
-  max-height: 62vh;
+  max-height: 100%;
   overflow: auto;
-  margin-top: var(--sp-3);
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--hairline-strong);
 }
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: clamp(13px, 1.35vw, 18px);
+  font-size: clamp(13px, 1.3cqw, 17px);
   font-variant-numeric: tabular-nums;
   color: var(--fg);
 }
 .data-table th,
 .data-table td {
   text-align: left;
-  padding: clamp(9px, 1.1vw, 15px) clamp(12px, 1.4vw, 20px);
+  padding: clamp(9px, 1.1cqw, 15px) clamp(12px, 1.4cqw, 20px);
   border-bottom: 1px solid var(--hairline);
-  vertical-align: top;
+  vertical-align: middle;
 }
 .data-table thead th {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: var(--accent);
-  color: #000;
+  background: var(--fg);
+  color: var(--bg);
   font-weight: var(--fw-extrabold);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
+  font-size: clamp(11px, 1.1cqw, 13px);
   white-space: nowrap;
+  border-bottom: 2px solid var(--accent);
 }
-.data-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--fg) 6%, transparent); }
+.data-table tbody tr:nth-child(even) { background: var(--panel); }
+.data-table tbody tr:hover { background: var(--panel-2); }
+.data-table tbody td:first-child { font-weight: var(--fw-semibold); }
 .data-table tbody tr:last-child td { border-bottom: none; }
 
 /* ============================================================
-   5. MEDIA — wrapper, placeholder geometrico, duotone
+   6. MEDIA — wrapper + placeholder "dashboard" on-brand
    ============================================================ */
 .media {
   position: relative;
@@ -458,27 +930,55 @@
 }
 .media__img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
-/* Placeholder elegante (niente wireframe): pannello scuro + trama
-   diagonale tenue + un piccolo segno giallo centrale. */
+/* Placeholder on-brand: pannello "dashboard" — griglia visibile, una
+   barra-chart gialla netta e un'etichetta. Sembra un mock di report,
+   non un buco nero. Opacita' forzata: indipendente dal reveal padre. */
 .media--placeholder {
-  background-color: #0a0a0a;
-  background-image: repeating-linear-gradient(
-    -45deg,
-    rgba(255, 255, 0, 0.05) 0,
-    rgba(255, 255, 0, 0.05) 2px,
-    transparent 2px,
-    transparent 16px
-  );
+  opacity: 1 !important;
+  background-color: #0b0b0b;
+  background-image:
+    /* griglia fine (asse dashboard) — visibile ma sobria */
+    linear-gradient(rgba(255, 255, 0, 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 0, 0.10) 1px, transparent 1px),
+    /* secondo livello piu' fitto per profondita' */
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 11% 16%, 11% 16%, 2.2% 3.2%, 2.2% 3.2%;
+  background-position: center;
 }
-.media--placeholder::after {
+.media--placeholder::before {
+  /* barre stilizzate da dashboard, ancorate in basso */
   content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: clamp(40px, 6vw, 72px);
-  height: clamp(40px, 6vw, 72px);
-  transform: translate(-50%, -50%);
-  border: 3px solid var(--accent);
+  left: 10%;
+  right: 10%;
+  bottom: 20%;
+  height: 40%;
+  background:
+    linear-gradient(to top, var(--yellow) 0 38%, transparent 38%) 0 100% / 9% 38% no-repeat,
+    linear-gradient(to top, rgba(255,255,0,0.5) 0 60%, transparent 60%) 16% 100% / 9% 60% no-repeat,
+    linear-gradient(to top, var(--yellow) 0 48%, transparent 48%) 32% 100% / 9% 48% no-repeat,
+    linear-gradient(to top, rgba(255,255,0,0.5) 0 82%, transparent 82%) 48% 100% / 9% 82% no-repeat,
+    linear-gradient(to top, var(--yellow) 0 64%, transparent 64%) 64% 100% / 9% 64% no-repeat,
+    linear-gradient(to top, rgba(255,255,0,0.5) 0 100%, transparent 100%) 80% 100% / 9% 100% no-repeat,
+    linear-gradient(to top, var(--yellow) 0 72%, transparent 72%) 96% 100% / 9% 72% no-repeat;
+  pointer-events: none;
+}
+.media--placeholder::after {
+  /* etichetta del mock + linea-base */
+  content: 'OFG · LIVE DASHBOARD';
+  position: absolute;
+  left: 10%;
+  bottom: 13%;
+  padding-top: 0.6em;
+  border-top: 1px solid rgba(255, 255, 0, 0.5);
+  width: 80%;
+  font-family: var(--font-sans);
+  font-size: clamp(0.62rem, 1cqw, 0.82rem);
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: rgba(255, 255, 0, 0.9);
+  pointer-events: none;
 }
 .media--duotone .media__img { filter: grayscale(1) contrast(1.05); }
 .media--duotone::after {
@@ -492,12 +992,11 @@
 }
 
 /* ============================================================
-   6. MICROANIMAZIONI D'INGRESSO
+   7. MICROANIMAZIONI D'INGRESSO
    --------------------------------------------------------------
-   Stato finale GIA' visibile di default (sicuro per chi disattiva
-   il motion). Il movimento e' ADDITIVO: vive solo dentro la media
-   query no-preference. L'engine aggiunge .is-visible quando la
-   slide entra in vista (IntersectionObserver); lo stagger usa --i.
+   Stato finale GIA' visibile di default. Il movimento e' ADDITIVO,
+   solo dentro no-preference. L'engine aggiunge .is-visible; lo
+   stagger usa --i.
    ============================================================ */
 .reveal { opacity: 1; transform: none; }
 .bar { transform: scaleX(1); }
@@ -505,42 +1004,59 @@
 @media (prefers-reduced-motion: no-preference) {
   .reveal {
     opacity: 0;
-    transform: translateY(26px);
+    transform: translateY(18px);
     transition:
-      opacity 0.62s var(--ease-out),
-      transform 0.62s var(--ease-out);
-    transition-delay: calc(var(--i, 0) * 85ms);
+      opacity 0.55s var(--ease-out),
+      transform 0.65s var(--ease-out);
+    transition-delay: calc(var(--i, 0) * 65ms);
     will-change: opacity, transform;
   }
-  .reveal[data-anim='left']  { transform: translateX(-32px); }
-  .reveal[data-anim='right'] { transform: translateX(32px); }
-  .reveal[data-anim='scale'] { transform: scale(0.9); }
-  .reveal[data-anim='fade']  { transform: translateY(10px); }
+  .reveal[data-anim='left']  { transform: translateX(-26px); }
+  .reveal[data-anim='right'] { transform: translateX(30px); }
+  .reveal[data-anim='scale'] { transform: scale(0.94); }
+  .reveal[data-anim='fade']  { transform: translateY(8px); }
   .reveal.is-visible { opacity: 1; transform: none; }
 
-  /* La barretta gialla fa un WIPE da sinistra (override del transform). */
+  /* NB: niente wipe via clip-path sui titoli. Uno stato iniziale
+     clip-path:inset(0 100% 0 0) azzera l'area visibile e fa sì che
+     l'IntersectionObserver NON consideri il titolo "in vista" → la
+     classe .is-visible non viene mai aggiunta e il titolo resta
+     nascosto. I titoli usano quindi la reveal standard (opacity +
+     transform con stagger, e scale/slide via data-anim), che è
+     IO-safe e parte sempre. */
+
+  /* Filetto giallo: draw-in da sinistra. */
   .bar {
     transform: scaleX(0);
-    transition: transform 0.7s var(--ease-out);
-    transition-delay: calc(var(--i, 0) * 85ms + 140ms);
+    transition: transform 0.65s var(--ease-out);
+    transition-delay: calc(var(--i, 0) * 65ms + 120ms);
   }
   .bar.is-visible { transform: scaleX(1); }
 
-  /* Il grande numero di sezione entra con un leggero kenburns. */
+  /* Grande numero di sezione: leggero sollevamento. */
   .section__num {
     transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
   }
 }
 
 /* ============================================================
-   7. RESPONSIVE — sotto i 760px impila/riduce con grazia.
+   8. RESPONSIVE
    ============================================================ */
+@media (max-width: 1000px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); border-right: none; }
+  .kpi-card:nth-child(2n) { border-right: 1px solid var(--hairline); }
+}
+@media (max-width: 900px) {
+  .slide--section .slide__inner { grid-template-columns: 1fr; }
+  .slide--section__num-col { border-right: none; border-bottom: 1px solid var(--hairline); padding-right: 0; padding-bottom: var(--sp-4); }
+  .bullets { grid-template-columns: 1fr; }
+  .slide--quote .slide__inner { grid-template-columns: 1fr; }
+  .quote__mark, .quote__text, .quote__cite { grid-column: 1; }
+}
 @media (max-width: 760px) {
   .slide--split .slide__inner { flex-direction: column; }
-  .split__media { min-height: 38dvh; }
-  .split__text { padding-top: calc(var(--slide-pad) + var(--frame-top)); }
-  .kpi-grid { grid-template-columns: 1fr 1fr; gap: var(--sp-5); }
-}
-@media (max-width: 460px) {
+  .split__media { min-height: 36dvh; }
   .kpi-grid { grid-template-columns: 1fr; }
+  .kpi-card { border-right: 1px solid var(--hairline) !important; }
+  .slide__head__after { display: none; }
 }

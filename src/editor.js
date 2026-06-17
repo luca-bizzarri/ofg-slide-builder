@@ -109,6 +109,7 @@
     this.slides = [];            // ultimi modelli parse-ati
     this.engine = null;          // istanza OFG.Engine corrente
     this.layout = false;         // modalita' di lavoro visuale (ritaglio/drop foto)
+    this.activeIndex = 0;        // indice della slide attiva nell'anteprima
     this._noticeTimer = 0;
 
     this._cacheDom();
@@ -141,6 +142,18 @@
     /* Salva/Apri progetto (.ofg). */
     this.elBtnSaveProject = q(r, '#btn-save-project');
     this.elOfgInput = q(r, '#ofg-input');
+
+    /* Componi con AI (modal) + toggle "inserisci nella slide attiva". */
+    this.elBtnAiCompose = q(r, '#btn-ai-compose');
+    this.elAiModal = q(r, '#ai-modal');
+    this.elAiBrief = q(r, '#ai-brief');
+    this.elAiText = q(r, '#ai-text');
+    this.elAiClient = q(r, '#ai-client');
+    this.elAiImages = q(r, '#ai-images');
+    this.elAiStatus = q(r, '#ai-status');
+    this.elAiRun = q(r, '#ai-run');
+    this.elAiSettings = q(r, '#ai-settings');
+    this.elImgToActive = q(r, '#img-to-active');
 
     /* Menu a tendina della toolbar (File / Importa / Inserisci). */
     this.menus = r.querySelectorAll
@@ -334,6 +347,35 @@
         if (file) self._openProject(file);
         /* Reset cosi' si puo' riaprire lo stesso file. */
         ev.target.value = '';
+      });
+    }
+
+    /* --- Componi con AI: apertura modal, chiusura, run, URL backend --- */
+    if (this.elBtnAiCompose) {
+      this.elBtnAiCompose.addEventListener('click', function () { self._openAiModal(); });
+    }
+    if (this.elAiModal) {
+      /* Chiusura: backdrop, × e bottoni con [data-ai-close]. */
+      this.elAiModal.addEventListener('click', function (e) {
+        if (e.target && e.target.closest && e.target.closest('[data-ai-close]')) {
+          self._closeAiModal();
+        }
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && self.elAiModal && !self.elAiModal.hidden) self._closeAiModal();
+      });
+    }
+    if (this.elAiRun) {
+      this.elAiRun.addEventListener('click', function () { self._runAiCompose(); });
+    }
+    if (this.elAiSettings && OFG.aiCompose) {
+      this.elAiSettings.addEventListener('click', function () {
+        var cur = OFG.aiCompose.getBackendUrl();
+        var url = global.prompt('URL del backend AI (ofg-tool):', cur);
+        if (url != null) {
+          OFG.aiCompose.setBackendUrl(url);
+          self._aiStatus('URL backend aggiornato: ' + OFG.aiCompose.getBackendUrl());
+        }
       });
     }
   };
@@ -572,8 +614,9 @@
   /* Callback al cambio slide: niente UI extra obbligatoria, ma utile
      per estensioni future (qui aggiorniamo solo un eventuale attr). */
   Editor.prototype._onSlideChange = function (state) {
+    this.activeIndex = (state && typeof state.index === 'number') ? state.index : 0;
     if (this.elPanelPreview) {
-      this.elPanelPreview.setAttribute('data-active-index', String(state.index));
+      this.elPanelPreview.setAttribute('data-active-index', String(this.activeIndex));
     }
   };
 
@@ -717,15 +760,27 @@
     try { ta.setSelectionRange(pos, pos); ta.focus(); } catch (e) { /* no-op */ }
   };
 
-  /* Monta la galleria immagini: click su una miniatura inserisce il token. */
+  /* Monta la galleria immagini. Click su una miniatura:
+     - se il toggle "inserisci nella slide attiva" e' ON (default) o si e' in
+       modalita' Layout -> assegna la foto alla slide attualmente in anteprima
+       (OFG.blocks.setImage sulla slide attiva), cosi' "questa foto in questa slide";
+     - altrimenti inserisce il token "![](img:ID)" al cursore (comportamento storico). */
   Editor.prototype._mountGallery = function () {
     var self = this;
     if (!this.elGallery || !OFG.images || !OFG.images.mountGallery) return;
     OFG.images.mountGallery(this.elGallery, {
       onInsert: function (id) {
-        self._insertImageToken(id);
-        self._render();
-        self._persist();
+        var toActive = self.layout ||
+          (self.elImgToActive ? self.elImgToActive.checked : false);
+        if (toActive && OFG.blocks && OFG.blocks.setImage && self.slides && self.slides.length) {
+          var idx = self.activeIndex;
+          if (typeof idx !== 'number' || idx < 0 || idx >= self.slides.length) idx = 0;
+          self._setSlideImage(idx, 'img:' + id);
+        } else {
+          self._insertImageToken(id);
+          self._render();
+          self._persist();
+        }
       }
     });
   };
@@ -928,6 +983,126 @@
   };
 
   /* --------------------------------------------------------
+     COMPONI CON AI (modal -> backend ofg-tool)
+     -------------------------------------------------------- */
+
+  /* Messaggio di stato dentro al modal. kind: '' | 'busy' | 'error'. */
+  Editor.prototype._aiStatus = function (msg, kind) {
+    if (!this.elAiStatus) return;
+    this.elAiStatus.textContent = msg || '';
+    this.elAiStatus.className = 'ai-status' + (kind ? ' is-' + kind : '');
+  };
+
+  /* Apre il modal: popola le foto disponibili e verifica il backend. */
+  Editor.prototype._openAiModal = function () {
+    if (!this.elAiModal) return;
+
+    /* Lista foto disponibili (chip con miniatura + nome). */
+    if (this.elAiImages) {
+      this.elAiImages.innerHTML = '';
+      var imgs = (OFG.images && OFG.images.all) ? OFG.images.all() : [];
+      if (!imgs.length) {
+        this.elAiImages.textContent = 'Nessuna foto caricata. Trascinane qualcuna nella galleria a sinistra: l\'AI le piazzera\'.';
+      } else {
+        for (var i = 0; i < imgs.length; i++) {
+          var chip = document.createElement('span');
+          chip.className = 'ai-images__item';
+          var th = document.createElement('img');
+          th.src = imgs[i].dataUri || '';
+          th.alt = '';
+          var nm = document.createElement('span');
+          nm.textContent = imgs[i].name || ('img:' + imgs[i].id);
+          chip.appendChild(th);
+          chip.appendChild(nm);
+          this.elAiImages.appendChild(chip);
+        }
+      }
+    }
+
+    this.elAiModal.hidden = false;
+
+    /* Stato backend. */
+    var self = this;
+    if (OFG.aiCompose && OFG.aiCompose.isBlockedByMixedContent && OFG.aiCompose.isBlockedByMixedContent()) {
+      this._aiStatus('Questa pagina e\' su https: apri lo slide-builder da http://localhost:8000 per usare l\'AI.', 'error');
+    } else if (OFG.aiCompose && OFG.aiCompose.health) {
+      this._aiStatus('Verifico il backend AI…', 'busy');
+      OFG.aiCompose.health().then(function (ok) {
+        if (self.elAiModal.hidden) return;
+        if (ok) self._aiStatus('Backend AI pronto (' + OFG.aiCompose.getBackendUrl() + ').');
+        else self._aiStatus('Backend AI non raggiungibile su ' + OFG.aiCompose.getBackendUrl() +
+          '. Avvia ofg-tool: uvicorn api:app --port 8800. (Cambia URL con "URL backend…")', 'error');
+      });
+    }
+
+    if (this.elAiBrief) { try { this.elAiBrief.focus(); } catch (e) {} }
+  };
+
+  Editor.prototype._closeAiModal = function () {
+    if (this.elAiModal) this.elAiModal.hidden = true;
+  };
+
+  /* Esegue la composizione: chiama il backend, valida l'output e lo inietta. */
+  Editor.prototype._runAiCompose = function () {
+    var self = this;
+    if (!OFG.aiCompose || !OFG.aiCompose.compose) {
+      this._aiStatus('Modulo AI non disponibile.', 'error');
+      return;
+    }
+    var brief = this.elAiBrief ? this.elAiBrief.value.trim() : '';
+    var text = this.elAiText ? this.elAiText.value.trim() : '';
+    var clientId = this.elAiClient ? this.elAiClient.value.trim() : '';
+    if (!brief && !text) {
+      this._aiStatus('Inserisci un brief oppure incolla del testo.', 'error');
+      return;
+    }
+    var mode = 'append';
+    var checked = this.elAiModal && this.elAiModal.querySelector('input[name="ai-mode"]:checked');
+    if (checked) mode = checked.value;
+
+    if (this.elAiRun) this.elAiRun.disabled = true;
+    this._aiStatus('Composizione in corso… (può richiedere qualche secondo)', 'busy');
+
+    OFG.aiCompose.compose({
+      brief: brief, text: text, clientId: clientId || null, maxSlides: 12
+    }).then(function (res) {
+      var clean = OFG.aiCompose.sanitize(res.markdown);
+      if (!clean.slideCount) {
+        throw new Error('L\'AI non ha prodotto slide valide. Riprova affinando il brief.');
+      }
+      if (!self.elSource) throw new Error('Editor non disponibile.');
+
+      if (mode === 'replace') {
+        self.elSource.value = clean.markdown;
+      } else {
+        /* Aggiunge i nuovi blocchi in fondo a quelli esistenti. */
+        var cur = self.elSource.value;
+        if (cur && cur.trim() && OFG.blocks && OFG.blocks.split && OFG.blocks.join) {
+          var existing = OFG.blocks.split(cur).filter(function (b) { return b.trim() !== ''; });
+          var added = OFG.blocks.split(clean.markdown).filter(function (b) { return b.trim() !== ''; });
+          self.elSource.value = OFG.blocks.join(existing.concat(added));
+        } else {
+          self.elSource.value = clean.markdown;
+        }
+      }
+      self._render();
+      self._persist();
+      self._closeAiModal();
+
+      var note = 'Bozza generata con l\'AI: ' + clean.slideCount +
+        (clean.slideCount === 1 ? ' slide' : ' slide') + '.';
+      if (clean.removedImages) {
+        note += ' (' + clean.removedImages + ' riferimenti immagine non validi rimossi.)';
+      }
+      self._showNotice('info', note);
+    }).catch(function (err) {
+      self._aiStatus((err && err.message) ? err.message : 'Errore durante la composizione.', 'error');
+    }).then(function () {
+      if (self.elAiRun) self.elAiRun.disabled = false;
+    });
+  };
+
+  /* --------------------------------------------------------
      RIORDINO SLIDE (striscia di miniature drag&drop)
      -------------------------------------------------------- */
 
@@ -959,9 +1134,29 @@
       var meta = document.createElement('span');
       meta.className = 'slide-strip__meta';
 
-      var type = document.createElement('span');
+      /* Tendina di scelta tipo: oltre che dal codice (:: tipo), l'utente
+         puo' cambiare la tipologia di ogni slide da qui. */
+      var type = document.createElement('select');
       type.className = 'slide-strip__type';
-      type.textContent = s.type || 'slide';
+      type.setAttribute('data-strip-type-index', String(i));
+      type.title = 'Tipo di slide';
+      var typeList = (OFG.SLIDE_TYPES && OFG.SLIDE_TYPES.length)
+        ? OFG.SLIDE_TYPES
+        : ['cover', 'section', 'text', 'bullets', 'kpi', 'quote', 'image', 'split', 'closing', 'table'];
+      var cur = (s.type || 'text');
+      for (var ti = 0; ti < typeList.length; ti++) {
+        var opt = document.createElement('option');
+        opt.value = typeList[ti];
+        opt.textContent = typeList[ti].toUpperCase();
+        if (typeList[ti] === cur) opt.selected = true;
+        type.appendChild(opt);
+      }
+      /* Evita che interagire con la tendina avvii il drag della voce. */
+      var stopDrag = function (e) { e.stopPropagation(); };
+      type.addEventListener('mousedown', stopDrag);
+      type.addEventListener('pointerdown', stopDrag);
+      type.addEventListener('click', stopDrag);
+      type.addEventListener('dragstart', function (e) { e.preventDefault(); e.stopPropagation(); });
 
       var title = document.createElement('span');
       title.className = 'slide-strip__title';
@@ -1036,6 +1231,21 @@
           all[k].classList.remove('is-drop-over');
           all[k].classList.remove('is-dragging');
         }
+      });
+
+      /* Cambio tipo da tendina: scrive la direttiva ":: tipo" nel blocco,
+         ri-renderizza e salva. Delegato sul contenitore (la striscia si
+         ricostruisce ad ogni render). */
+      strip.addEventListener('change', function (e) {
+        var sel = e.target;
+        if (!sel || !sel.classList || !sel.classList.contains('slide-strip__type')) return;
+        var idx = parseInt(sel.getAttribute('data-strip-type-index'), 10);
+        if (isNaN(idx) || !self.elSource || !OFG.blocks || !OFG.blocks.setType) return;
+        var md = OFG.blocks.setType(self.elSource.value, idx, sel.value);
+        if (md === self.elSource.value) return;
+        self.elSource.value = md;
+        self._render();
+        self._persist();
       });
     }
   };

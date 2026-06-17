@@ -34,12 +34,19 @@
 .toolbar {
   display: flex;
   align-items: center;
-  gap: var(--sp-4);
+  gap: var(--sp-2);
   flex-wrap: wrap;
   padding: var(--sp-3) var(--sp-4);
-  background: var(--black);
+  min-height: 60px;
+  background: linear-gradient(180deg, #0b0b0b 0%, var(--black) 100%);
   border-bottom: 1px solid var(--line-on-dark);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03);
   z-index: var(--z-editor-ui);
+}
+
+/* I tre menu (File/Importa/Inserisci) stanno vicini come un cluster. */
+.toolbar .menu + .menu {
+  margin-left: calc(var(--sp-1) * -1 + 2px);
 }
 
 /* Marchio testuale a sinistra nella toolbar. */
@@ -47,11 +54,15 @@
   display: flex;
   align-items: center;
   gap: var(--sp-2);
+  margin-right: var(--sp-2);
+  padding-right: var(--sp-3);
+  border-right: 1px solid var(--line-on-dark);
   font-weight: var(--fw-black);
   text-transform: uppercase;
   letter-spacing: var(--ls-caps);
   font-size: var(--fs-small);
   color: var(--white);
+  white-space: nowrap;
   user-select: none;
 }
 
@@ -74,13 +85,19 @@
   display: flex;
   align-items: center;
   gap: var(--sp-2);
+  margin-left: var(--sp-2);
+}
+
+/* La CTA primaria (Esporta) prende un po' d'aria a sinistra. */
+.toolbar__group--cta {
+  margin-left: var(--sp-3);
 }
 
 .toolbar__label {
   font-size: var(--fs-small);
   text-transform: uppercase;
   letter-spacing: var(--ls-caps);
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 /* ============================================================
@@ -99,8 +116,9 @@
   background: transparent;
   border: 1px solid var(--line-on-dark);
   border-radius: var(--radius-pill);
-  padding: var(--sp-2) var(--sp-4);
+  padding: var(--sp-2) var(--sp-3);
   cursor: pointer;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
@@ -113,6 +131,8 @@
 
 .btn:hover {
   border-color: var(--accent);
+  background: rgba(255, 255, 0, 0.08);
+  color: var(--white);
 }
 
 .btn:active {
@@ -130,10 +150,18 @@
   color: var(--black);
   border-color: var(--accent);
   font-weight: var(--fw-bold);
+  box-shadow: 0 0 0 0 rgba(255, 255, 0, 0);
 }
 
 .btn--primary:hover {
+  background: var(--accent);
+  color: var(--black);
   filter: brightness(1.06);
+  box-shadow: 0 4px 16px rgba(255, 255, 0, 0.25);
+}
+
+.btn--primary:active {
+  filter: brightness(0.96);
 }
 
 .btn--primary:disabled {
@@ -152,6 +180,11 @@
   gap: 2px;
 }
 
+/* L'etichetta del gruppo (MODALITA'/TEMA) sta attaccata al controllo. */
+.toolbar__group .toolbar__label {
+  margin-right: calc(var(--sp-1) * -1);
+}
+
 .segmented__btn {
   appearance: none;
   font-family: inherit;
@@ -163,17 +196,26 @@
   background: transparent;
   border: none;
   border-radius: var(--radius-pill);
-  padding: var(--sp-1) var(--sp-3);
+  padding: var(--sp-1) var(--sp-2);
+  white-space: nowrap;
   cursor: pointer;
   transition:
     background var(--dur-base) var(--ease-out),
     color var(--dur-base) var(--ease-out);
 }
 
+/* Hover sui segmenti non attivi: schiarisce il testo, fondo tenue. */
+.segmented__btn:not(.is-active):hover {
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.08);
+}
+
 /* Segmento attivo: pillola gialla con testo nero. */
 .segmented__btn.is-active {
   background: var(--accent);
   color: var(--black);
+  font-weight: var(--fw-bold);
+  box-shadow: 0 1px 6px rgba(255, 255, 0, 0.2);
 }
 
 .segmented__btn:focus-visible {
@@ -310,16 +352,30 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-3);
-  padding: var(--sp-3) var(--sp-4);
+  padding: var(--sp-3) var(--sp-5);
+  min-height: 44px;
+  background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid var(--line-on-dark);
 }
 
 .panel-source__title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
   font-size: var(--fs-small);
   font-weight: var(--fw-bold);
   text-transform: uppercase;
   letter-spacing: var(--ls-caps);
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Trattino giallo firma davanti al titolo del pannello. */
+.panel-source__title::before {
+  content: '';
+  width: 16px;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
 }
 
 /* Conteggio slide rilevate (badge giallo discreto). */
@@ -340,14 +396,38 @@
   resize: none;
   border: none;
   outline: none;
-  padding: var(--sp-4);
+  padding: var(--sp-5);
   font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: var(--white);
+  font-size: 0.875rem;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.92);
   background: transparent;
   tab-size: 2;
   caret-color: var(--accent);
+  transition: box-shadow var(--dur-base) var(--ease-out);
+}
+
+/* Focus della textarea: filo giallo interno a sinistra (senza spostare
+   il testo) per segnalare il campo attivo in modo accessibile. */
+.source:focus {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* Scrollbar discreta dentro la textarea. */
+.source::-webkit-scrollbar {
+  width: 10px;
+}
+.source::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: var(--radius-pill);
+}
+.source::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+  border: 3px solid transparent;
+  background-clip: padding-box;
 }
 
 .source::placeholder {
@@ -380,15 +460,39 @@
 }
 
 /* ---- Pannello anteprima (destra) ---- */
+/* Fa da "backstage" neutro: un fondo grigio-scuro a texture sottile che
+   stacca il palco 16:9 dal resto e fa leggere il deck come una slide. */
 .panel-preview {
   position: relative;
   min-height: 0;
   overflow: hidden;
-  background: var(--black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-6);
+  background:
+    radial-gradient(120% 120% at 50% 0%, #1a1a1a 0%, #0d0d0d 60%, #080808 100%);
 }
 
-/* Contenitore del deck: occupa tutto il pannello. L'engine vi
-   inietta le slide e la chrome di navigazione. */
+/* Palco 16:9: incornicia il deck, centrato, con ombra profonda e una
+   sottile cornice. Si adatta al riquadro mantenendo le proporzioni. */
+.preview-stage {
+  position: relative;
+  width: 100%;
+  max-width: calc((100dvh - 2 * var(--sp-6) - 60px) * 16 / 9);
+  aspect-ratio: 16 / 9;
+  max-height: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--white);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    var(--shadow-lg),
+    0 40px 80px rgba(0, 0, 0, 0.45);
+}
+
+/* Contenitore del deck: riempie il palco. L'engine vi inietta le slide
+   e la chrome di navigazione (confinate dentro la cornice). */
 .preview-deck {
   position: relative;
   width: 100%;
@@ -683,6 +787,16 @@
   .toolbar__label {
     display: none;
   }
+
+  /* Backstage piu' compatto; il palco riempie la larghezza disponibile
+     mantenendo il 16:9 (niente piu' vincolo basato sull'altezza viewport). */
+  .panel-preview {
+    padding: var(--sp-4);
+  }
+
+  .preview-stage {
+    max-width: 100%;
+  }
 }
 
 /* ============================================================
@@ -750,14 +864,33 @@
 }
 
 .strip-panel__head {
+  display: flex;
+  align-items: center;
   cursor: pointer;
-  padding: var(--sp-3) var(--sp-4);
+  padding: var(--sp-3) var(--sp-5);
   font-size: var(--fs-small);
-  font-weight: var(--fw-bold);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
   letter-spacing: var(--ls-caps);
   color: rgba(255, 255, 255, 0.7);
   user-select: none;
+  list-style: none;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.strip-panel__head::-webkit-details-marker { display: none; }
+
+/* Freccetta gialla come nell'header immagini (coerenza tra pannelli). */
+.strip-panel__head::before {
+  content: '\25B8';
+  display: inline-block;
+  margin-right: var(--sp-2);
+  color: var(--accent);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.strip-panel[open] .strip-panel__head::before {
+  transform: rotate(90deg);
 }
 
 .strip-panel__head:hover {
@@ -826,13 +959,35 @@
   gap: 1px;
 }
 
+/* Tendina di scelta tipo nella striscia slide. */
 .slide-strip__type {
-  font-size: 0.7rem;
+  align-self: flex-start;
+  max-width: 100%;
+  font-family: inherit;
+  font-size: 0.66rem;
   text-transform: uppercase;
   letter-spacing: var(--ls-caps);
   color: var(--accent);
-  font-weight: var(--fw-semibold);
+  font-weight: var(--fw-bold);
+  background: rgba(255, 255, 0, 0.08);
+  border: 1px solid var(--line-on-dark);
+  border-radius: var(--radius-sm);
+  padding: 1px 18px 1px 6px;
+  margin-bottom: 1px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  /* freccetta gialla disegnata in SVG inline */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6' viewBox='0 0 8 6'%3E%3Cpath fill='%23ffff00' d='M0 0h8L4 6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  transition: border-color var(--dur-base) var(--ease-out), background-color var(--dur-base) var(--ease-out);
 }
+.slide-strip__type:hover { border-color: var(--accent); background-color: rgba(255, 255, 0, 0.14); }
+.slide-strip__type:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* Le opzioni del menu a tendina sono rese dal sistema: forziamo testo
+   leggibile su fondo scuro. */
+.slide-strip__type option { background: #1a1a1a; color: #fff; }
 
 .slide-strip__title {
   font-size: var(--fs-small);
@@ -843,7 +998,161 @@
 }
 
 /* ============================================================
-   9. RIDOTTO MOVIMENTO — disattiva le transizioni UI
+   9. COMPONI CON AI — bottone, modal, campi
+   ============================================================ */
+.btn--ai {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: var(--fw-bold);
+}
+.btn--ai:hover { background: var(--accent); color: #000; }
+
+/* Toggle "inserisci nella slide attiva" nella galleria. */
+.imglib-target {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-3) var(--sp-2);
+  font-size: var(--fs-small);
+  color: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+}
+.imglib-target input { accent-color: var(--accent); }
+
+.ai-modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay, 1000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ai-modal[hidden] { display: none; }
+.ai-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.66);
+  backdrop-filter: blur(2px);
+}
+.ai-modal__dialog {
+  position: relative;
+  width: min(680px, 92vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background: #111;
+  color: #fff;
+  border: 1px solid var(--line-on-dark);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.ai-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--line-on-dark);
+}
+.ai-modal__title {
+  margin: 0;
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-extrabold);
+}
+.ai-modal__title::before {
+  content: '✦ ';
+  color: var(--accent);
+}
+.ai-modal__x {
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.ai-modal__x:hover { color: #fff; }
+.ai-modal__body {
+  padding: var(--sp-5);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.ai-field { display: flex; flex-direction: column; gap: var(--sp-2); }
+.ai-field--inline {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+.ai-field__label {
+  font-size: var(--fs-small);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: var(--fw-semibold);
+}
+.ai-field__input {
+  width: 100%;
+  font-family: inherit;
+  font-size: var(--fs-body);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line-on-dark);
+  border-radius: var(--radius-md);
+  padding: var(--sp-3);
+  resize: vertical;
+}
+.ai-field__input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ai-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  max-height: 120px;
+  overflow-y: auto;
+  padding: var(--sp-2);
+  border: 1px dashed var(--line-on-dark);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-small);
+  color: rgba(255, 255, 255, 0.7);
+}
+.ai-images__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  background: rgba(255, 255, 0, 0.08);
+  border: 1px solid var(--line-on-dark);
+  border-radius: var(--radius-pill);
+}
+.ai-images__item img {
+  width: 22px;
+  height: 22px;
+  object-fit: cover;
+  border-radius: 3px;
+}
+.ai-mode { display: flex; gap: var(--sp-4); font-size: var(--fs-small); }
+.ai-mode label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.ai-mode input { accent-color: var(--accent); }
+.ai-status {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: var(--fs-small);
+  color: rgba(255, 255, 255, 0.8);
+}
+.ai-status.is-error { color: #fff; background: rgba(255, 60, 60, 0.18); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-sm); }
+.ai-status.is-busy::before { content: '⏳ '; }
+.ai-modal__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  border-top: 1px solid var(--line-on-dark);
+}
+
+/* ============================================================
+   10. RIDOTTO MOVIMENTO — disattiva le transizioni UI
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
   .btn,

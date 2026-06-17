@@ -115,9 +115,15 @@
       paragrafo: 'text',
       list: 'bullets',
       elenco: 'bullets',
+      bullet: 'bullets',
+      bullets: 'bullets',
+      punti: 'bullets',
       stats: 'kpi',
       numbers: 'kpi',
+      numeri: 'kpi',
+      kpis: 'kpi',
       citazione: 'quote',
+      quotes: 'quote',
       photo: 'image',
       foto: 'image',
       immagine: 'image',
@@ -235,13 +241,25 @@
 
     var lines = block.split(/\r?\n/);
     var bodyParts = [];   // paragrafi accumulati per 'body'
+    var paraBuf = [];     // righe del paragrafo corrente (a-capo morbidi)
     var tableRows = [];   // righe di tabella accumulate (tipo 'table')
     var explicitTheme = null;
+
+    /* Chiude il paragrafo in costruzione: le righe contigue (a-capo
+       morbidi del markdown) vengono unite con uno spazio in un solo
+       <p>. Una riga vuota nel sorgente separa due paragrafi. */
+    function flushPara() {
+      if (paraBuf.length) {
+        bodyParts.push(paraBuf.join(' '));
+        paraBuf = [];
+      }
+    }
 
     for (var i = 0; i < lines.length; i++) {
       var rawLine = lines[i];
       var line = rawLine.trim();
-      if (line === '') continue;
+      /* Riga vuota: chiude il paragrafo corrente (separatore). */
+      if (line === '') { flushPara(); continue; }
 
       /* 1) Direttive di metadato */
       var dir = matchDirective(rawLine);
@@ -306,6 +324,7 @@
       /* 5) Citazione '> ...' -> confluisce nel body (usato da quote) */
       var quote = line.match(/^>\s?(.*)$/);
       if (quote) {
+        flushPara();
         bodyParts.push(parseInline(quote[1].trim()));
         continue;
       }
@@ -313,12 +332,14 @@
       /* 6) Bullet '- ' oppure '* ' */
       var bullet = line.match(/^[-*]\s+(.*)$/);
       if (bullet) {
+        flushPara();
         slide.bullets.push(parseInline(bullet[1].trim()));
         continue;
       }
 
       /* 7) Riga KPI 'valore | etichetta' (almeno una pipe). */
       if (line.indexOf('|') !== -1) {
+        flushPara();
         var cells = line.split('|');
         var v = cells.shift().trim();
         var k = cells.join('|').trim(); // etichetta puo' contenere altre pipe
@@ -326,9 +347,12 @@
         continue;
       }
 
-      /* 8) Qualsiasi altra riga = paragrafo di corpo. */
-      bodyParts.push(parseInline(line));
+      /* 8) Qualsiasi altra riga = riga del paragrafo corrente.
+         Gli a-capo morbidi contigui si uniscono; la riga vuota
+         (gestita sopra) chiude il paragrafo. */
+      paraBuf.push(parseInline(line));
     }
+    flushPara();
 
     /* Corpo: paragrafi separati da newline (il renderer li
        spezza su \n in <p> distinti). */

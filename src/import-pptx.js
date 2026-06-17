@@ -305,6 +305,11 @@
         lines.push('![](img:' + imgs[0] + ')');
         break;
 
+      case 'kpi':
+        // Ogni paragrafo numerico -> "valore | etichetta".
+        emitKpi(lines, paras);
+        break;
+
       case 'bullets':
         emitBody(lines, paras, /*forceBullets*/ true);
         break;
@@ -349,9 +354,15 @@
       return 'image';
     }
 
-    // 5) Section/divider: solo titolo breve, nessun corpo, nessuna immagine.
-    if (title && nParas === 0 && !hasImg && wordCount(title) <= 6) {
-      return 'section';
+    // 5) Section/divider: titolo da "capitolo", niente immagine, non la prima.
+    if (title && !hasImg && !ctx.isFirst) {
+      if (nParas === 0 && wordCount(title) <= 8) return 'section';
+      // Titolo che "sembra" un divider (01 — ..., Capitolo, Parte, Sezione)
+      // anche con un breve sottotitolo.
+      if (nParas <= 1 && looksLikeSectionTitle(title) &&
+          (nParas === 0 || wordCount(paras[0]) <= 14)) {
+        return 'section';
+      }
     }
 
     // 6) Split: titolo/testo + immagine.
@@ -360,13 +371,58 @@
       return bodyWords === 0 ? 'image' : 'split';
     }
 
-    // 7) Bullets: piu' paragrafi (elenco) e ognuno relativamente breve.
+    // 7) KPI: piu' paragrafi BREVI e prevalentemente NUMERICI (statistiche).
+    if (nParas >= 2 && looksLikeKpi(paras)) {
+      return 'kpi';
+    }
+
+    // 8) Bullets: piu' paragrafi (elenco) e ognuno relativamente breve.
     if (nParas >= 2 && looksLikeList(paras)) {
       return 'bullets';
     }
 
-    // 8) Default: testo.
+    // 9) Default: testo.
     return 'text';
+  }
+
+  /* Riconosce un titolo da slide-divider/capitolo. */
+  function looksLikeSectionTitle(t) {
+    return /^(\d+\s*[\.\)\-–—:]|cap(itolo)?\b|parte\b|sezione\b|step\b|fase\b|modulo\b)/i.test(String(t).trim());
+  }
+
+  /* Una "statistica" e' un paragrafo breve che contiene un numero prominente
+     (eventualmente con simbolo: % k m mln mld x € $ + -). */
+  function isStatParagraph(p) {
+    if (wordCount(p) > 7) return false;
+    return /(^|\s)[+\-]?\d[\d.,]*\s*(%|k|m|mln|mld|x|€|\$|mila|milioni|miliardi)?/i.test(p) && /\d/.test(p);
+  }
+
+  /* Un blocco "sembra KPI" se >=2 paragrafi e la maggioranza sono statistiche. */
+  function looksLikeKpi(paras) {
+    if (paras.length < 2) return false;
+    var n = 0;
+    for (var i = 0; i < paras.length; i++) {
+      if (isStatParagraph(paras[i])) n++;
+    }
+    return n >= 2 && (n / paras.length) >= 0.5;
+  }
+
+  /* Emette i paragrafi come righe KPI "valore | etichetta": estrae il numero
+     iniziale come valore e il resto come etichetta. Se non c'e' un valore
+     iniziale chiaro, mette tutto come valore con etichetta vuota. */
+  function emitKpi(lines, paras) {
+    for (var i = 0; i < paras.length; i++) {
+      var p = cleanText(paras[i]);
+      if (!p) continue;
+      var m = p.match(/^([+\-]?\d[\d.,]*\s*(?:%|k|m|mln|mld|x|€|\$)?)\s*[—\-–:]*\s*(.*)$/i);
+      if (m && m[1]) {
+        var val = cleanText(m[1]);
+        var label = cleanText(m[2] || '');
+        lines.push(val + ' | ' + label);
+      } else {
+        lines.push(p + ' | ');
+      }
+    }
   }
 
   /* Riconosce testo da slide di chiusura. */

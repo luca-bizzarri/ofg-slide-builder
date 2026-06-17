@@ -137,6 +137,26 @@
     return frag;
   }
 
+  /* COLONNA TESTATA (layout editoriale a due colonne): raccoglie
+     eyebrow + titolo (con barretta) + sottotitolo in un blocco a
+     sinistra. Le slide di contenuto (text/bullets/kpi/table) mettono
+     il contenuto vero nella colonna destra: cosi' la slide riempie
+     l'intera larghezza invece di lasciare meta' pagina vuota. */
+  function buildHead(slide, type) {
+    var head = el('div', 'slide__head');
+    var i = 0;
+    var eb = buildEyebrow(slide, type);
+    if (eb) { head.appendChild(eb); i++; }
+    if (slide.title) { head.appendChild(buildHeading(slide.title, i)); i += 2; }
+    if (slide.subtitle) {
+      var s = el('p', 'subtitle');
+      setHTML(s, slide.subtitle);
+      reveal(s, i++);
+      head.appendChild(s);
+    }
+    return head;
+  }
+
   /* Corpo: spezza la stringa 'body' su '\n' in piu' <p>. */
   function buildBody(bodyHtml, startIndex) {
     var wrap = el('div', 'body');
@@ -328,52 +348,46 @@
   }
 
   function renderText(slide, inner) {
-    var i = 0;
-    var eb = buildEyebrow(slide, 'text');
-    if (eb) { reveal(eb, i++, 'fade'); inner.appendChild(eb); }
-    if (slide.title) { inner.appendChild(buildHeading(slide.title, i)); i += 2; }
-    if (slide.subtitle) {
-      var s = el('p', 'subtitle');
-      setHTML(s, slide.subtitle);
-      reveal(s, i++);
-      inner.appendChild(s);
-    }
-    if (slide.body) inner.appendChild(buildBody(slide.body, i));
+    inner.appendChild(buildHead(slide, 'text'));
+    var content = el('div', 'slide__content');
+    if (slide.body) content.appendChild(buildBody(slide.body, 0));
+    inner.appendChild(content);
   }
 
   function renderBullets(slide, inner) {
-    var i = 0;
-    var eb = buildEyebrow(slide, 'bullets');
-    if (eb) { reveal(eb, i++, 'fade'); inner.appendChild(eb); }
-    if (slide.title) { inner.appendChild(buildHeading(slide.title, i)); i += 2; }
-    if (slide.subtitle) {
-      var s = el('p', 'subtitle');
-      setHTML(s, slide.subtitle);
-      reveal(s, i++);
-      inner.appendChild(s);
-    }
+    inner.appendChild(buildHead(slide, 'bullets'));
 
+    var content = el('div', 'slide__content');
     var ul = el('ul', 'bullets');
     for (var b = 0; b < slide.bullets.length; b++) {
-      var li = el('li');
-      setHTML(li, slide.bullets[b]);
-      reveal(li, i++, 'left');
+      var li = el('li', 'bullet');
+      reveal(li, b, 'left');
+
+      /* Indice numerato grande (scheda editoriale, non pallino piatto). */
+      var n = el('span', 'bullet__n');
+      n.textContent = pad2(b + 1);
+      n.setAttribute('aria-hidden', 'true');
+      li.appendChild(n);
+
+      var txt = el('span', 'bullet__t');
+      setHTML(txt, slide.bullets[b]);
+      li.appendChild(txt);
+
       ul.appendChild(li);
     }
-    inner.appendChild(ul);
+    content.appendChild(ul);
+    inner.appendChild(content);
   }
 
   function renderKpi(slide, inner) {
-    var i = 0;
-    var eb = buildEyebrow(slide, 'kpi');
-    if (eb) { reveal(eb, i++, 'fade'); inner.appendChild(eb); }
-    if (slide.title) { inner.appendChild(buildHeading(slide.title, i)); i += 2; }
+    inner.appendChild(buildHead(slide, 'kpi'));
 
+    var content = el('div', 'slide__content');
     var grid = el('div', 'kpi-grid');
     for (var k = 0; k < slide.kpi.length; k++) {
       var item = slide.kpi[k] || {};
       var card = el('div', 'kpi-card');
-      reveal(card, i++, 'scale');
+      reveal(card, k, 'scale');
 
       var v = el('div', 'kpi-card__v');
       setHTML(v, item.v);
@@ -385,7 +399,8 @@
 
       grid.appendChild(card);
     }
-    inner.appendChild(grid);
+    content.appendChild(grid);
+    inner.appendChild(content);
   }
 
   function renderQuote(slide, inner) {
@@ -486,10 +501,8 @@
 
   /* Slide TABELLA: titolo opzionale + tabella dati on-brand. */
   function renderTable(slide, inner) {
-    var i = 0;
-    var eb = buildEyebrow(slide, 'table');
-    if (eb) { reveal(eb, i++, 'fade'); inner.appendChild(eb); }
-    if (slide.title) { inner.appendChild(buildHeading(slide.title, i)); i += 2; }
+    inner.appendChild(buildHead(slide, 'table'));
+    var content = el('div', 'slide__content');
 
     var t = slide.table || { headers: [], rows: [] };
     var wrap = el('div', 'table-wrap');
@@ -520,8 +533,9 @@
     }
     table.appendChild(tbody);
     wrap.appendChild(table);
-    reveal(wrap, i++);
-    inner.appendChild(wrap);
+    reveal(wrap, 0);
+    content.appendChild(wrap);
+    inner.appendChild(content);
   }
 
   /* Tabella di dispatch tipo -> renderer. */

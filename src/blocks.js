@@ -299,6 +299,62 @@
     return join(blocks);
   }
 
+  /**
+   * Legge il tipo DICHIARATO del blocco `index` (direttiva esplicita).
+   * Riconosce le tre forme: ":: tipo", "<!-- type: tipo -->", "type: tipo".
+   * Ritorna il tipo in minuscolo, oppure null se non c'e' direttiva
+   * (in tal caso il tipo viene INFERITO dal parser dal contenuto).
+   */
+  function getType(md, index) {
+    var blocks = split(md);
+    if (!Number.isInteger(index) || index < 0 || index >= blocks.length) return null;
+    var lines = blocks[index].split('\n');
+    for (var i = 0; i < lines.length; i++) {
+      var l = lines[i].trim();
+      var m = l.match(/^::\s*(.+)$/);
+      if (m) return m[1].trim().toLowerCase();
+      m = l.match(/^<!--\s*type\s*:\s*([\s\S]*?)\s*-->$/i);
+      if (m) return m[1].trim().toLowerCase();
+      m = l.match(/^type\s*:\s*(.*)$/i);
+      if (m) return m[1].trim().toLowerCase();
+    }
+    return null;
+  }
+
+  /**
+   * Imposta il tipo del blocco `index` scrivendo/sostituendo la direttiva.
+   * - Se esiste gia' una direttiva di tipo (qualunque delle 3 forme) la
+   *   sostituisce con ":: tipo".
+   * - Altrimenti inserisce ":: tipo" come PRIMA riga del blocco.
+   * type vuoto/nullo o index fuori range: ritorna md invariato.
+   */
+  function setType(md, index, type) {
+    var blocks = split(md);
+    if (!Number.isInteger(index) || index < 0 || index >= blocks.length) return md;
+    if (type == null || String(type).trim() === '') return md;
+    type = String(type).trim().toLowerCase();
+
+    var lines = blocks[index].split('\n');
+    var replaced = false;
+    for (var i = 0; i < lines.length; i++) {
+      var l = lines[i].trim();
+      if (/^::\s*.+$/.test(l) ||
+          /^<!--\s*type\s*:\s*[\s\S]*?-->$/i.test(l) ||
+          /^type\s*:\s*.*$/i.test(l)) {
+        lines[i] = ':: ' + type;
+        replaced = true;
+        break;
+      }
+    }
+    if (!replaced) {
+      if (lines.length === 1 && lines[0] === '') lines[0] = ':: ' + type;
+      else lines.unshift(':: ' + type);
+    }
+
+    blocks[index] = lines.join('\n');
+    return join(blocks);
+  }
+
   // Espone l'API pubblica.
   window.OFG.blocks = {
     split: split,
@@ -307,6 +363,8 @@
     reorder: reorder,
     getImage: getImage,
     setImage: setImage,
-    setImageOpts: setImageOpts
+    setImageOpts: setImageOpts,
+    getType: getType,
+    setType: setType
   };
 })();

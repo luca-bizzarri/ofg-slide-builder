@@ -43,11 +43,6 @@
             <button type="button" class="menu__item" id="btn-save-project"
                     role="menuitem" tabindex="-1">Salva progetto</button>
           </li>
-          <li class="menu__sep" role="separator"></li>
-          <li role="none">
-            <button type="button" class="menu__item" id="btn-export"
-                    role="menuitem" tabindex="-1">Esporta HTML</button>
-          </li>
         </ul>
       </div>
 
@@ -92,6 +87,11 @@
 
       <span class="toolbar__spacer"></span>
 
+      <!-- Componi con AI: brief/testo -> deck OFG via backend ofg-tool -->
+      <div class="toolbar__group">
+        <button type="button" id="btn-ai-compose" class="btn btn--ai">✦ Componi con AI</button>
+      </div>
+
       <!-- Modalita' di lavoro visuale (ritaglio foto + drop su slide) -->
       <div class="toolbar__group">
         <button type="button" id="btn-layout" class="btn" aria-pressed="false">Layout</button>
@@ -120,6 +120,13 @@
                   aria-pressed="false">Scuro</button>
         </div>
       </div>
+
+      <!-- Azione primaria sempre visibile a destra. E' lo STESSO bottone
+           #btn-export di prima (handler in editor.js immutato): spostato qui
+           fuori dal menu File e promosso a pillola gialla. -->
+      <div class="toolbar__group toolbar__group--cta">
+        <button type="button" class="btn btn--primary" id="btn-export">Esporta HTML</button>
+      </div>
     </header>
 
     <!-- ============ WORKSPACE: sorgente | anteprima ============ -->
@@ -140,20 +147,28 @@
         <!-- Galleria immagini: trascina/incolla foto, clicca per inserirle. -->
         <details class="imglib-panel" id="image-panel" open>
           <summary class="imglib-panel__head">Immagini · trascina o incolla, clicca per inserire</summary>
+          <label class="imglib-target">
+            <input type="checkbox" id="img-to-active" checked>
+            Inserisci la foto nella slide che sto guardando (anziché al cursore)
+          </label>
           <div id="image-gallery" class="imglib"></div>
         </details>
 
-        <!-- Riordino slide via drag&drop sulle miniature. -->
+        <!-- Tipo (tendina) + riordino slide via drag&drop sulle miniature. -->
         <details class="strip-panel" id="strip-panel">
-          <summary class="strip-panel__head">Ordina slide · trascina per riordinare</summary>
+          <summary class="strip-panel__head">Slide · scegli il tipo (tendina) · trascina per riordinare</summary>
           <div id="slide-strip" class="slide-strip"></div>
         </details>
       </section>
 
       <!-- Pannello anteprima (destra) -->
       <section class="panel-preview" aria-label="Anteprima presentazione">
-        <!-- Contenitore del deck: renderer + engine vi iniettano slide e chrome. -->
-        <main id="preview-deck" class="preview-deck deck"></main>
+        <!-- Palco 16:9: cornice neutra che incornicia il deck come una slide.
+             Solo wrapper grafico (CSS); #preview-deck resta intatto dentro. -->
+        <div class="preview-stage">
+          <!-- Contenitore del deck: renderer + engine vi iniettano slide e chrome. -->
+          <main id="preview-deck" class="preview-deck deck"></main>
+        </div>
         <!-- Stato vuoto (nascosto quando ci sono slide). -->
         <div id="preview-empty" class="preview-empty" hidden>
           <span class="preview-empty__icon" aria-hidden="true"></span>
@@ -161,6 +176,59 @@
         </div>
       </section>
 
+    </div>
+  </div>
+
+  <!-- ============ MODAL: Componi con AI ============ -->
+  <div class="ai-modal" id="ai-modal" hidden role="dialog" aria-modal="true" aria-labelledby="ai-modal-title">
+    <div class="ai-modal__backdrop" data-ai-close></div>
+    <div class="ai-modal__dialog" role="document">
+      <div class="ai-modal__head">
+        <h2 class="ai-modal__title" id="ai-modal-title">Componi con AI</h2>
+        <button type="button" class="ai-modal__x" id="ai-cancel" data-ai-close aria-label="Chiudi">×</button>
+      </div>
+
+      <div class="ai-modal__body">
+        <label class="ai-field">
+          <span class="ai-field__label">Brief / obiettivo</span>
+          <textarea id="ai-brief" class="ai-field__input" rows="2"
+                    placeholder="Es: report di performance H1 2026 per il cliente X, 8 slide, tono professionale."></textarea>
+        </label>
+
+        <label class="ai-field">
+          <span class="ai-field__label">Testo da strutturare (incolla qui)</span>
+          <textarea id="ai-text" class="ai-field__input" rows="7"
+                    placeholder="Incolla i contenuti (dal PPT, Word, email, appunti). L'AI li organizza in slide."></textarea>
+        </label>
+
+        <label class="ai-field ai-field--inline">
+          <span class="ai-field__label">Cliente (opzionale, per il brand)</span>
+          <input id="ai-client" class="ai-field__input" type="text"
+                 placeholder="id cliente in ofg-tool (lascia vuoto se non serve)">
+        </label>
+
+        <div class="ai-field">
+          <span class="ai-field__label">Foto disponibili (l'AI le piazza)</span>
+          <div id="ai-images" class="ai-images"></div>
+        </div>
+
+        <div class="ai-field ai-field--inline">
+          <span class="ai-field__label">Risultato</span>
+          <div class="ai-mode" role="radiogroup" aria-label="Come applicare il risultato">
+            <label><input type="radio" name="ai-mode" value="append" checked> Aggiungi in fondo</label>
+            <label><input type="radio" name="ai-mode" value="replace"> Sostituisci tutto</label>
+          </div>
+        </div>
+
+        <p class="ai-status" id="ai-status" aria-live="polite"></p>
+      </div>
+
+      <div class="ai-modal__foot">
+        <button type="button" class="btn" id="ai-settings">URL backend…</button>
+        <span class="toolbar__spacer"></span>
+        <button type="button" class="btn" data-ai-close>Annulla</button>
+        <button type="button" class="btn btn--primary" id="ai-run">Componi</button>
+      </div>
     </div>
   </div>
 
@@ -185,6 +253,8 @@
   <script src="./src/cropper.js"></script>
   <!-- Salva/apri progetto (.ofg): markdown + immagini + impostazioni. -->
   <script src="./src/project.js"></script>
+  <!-- Componi con AI (ponte verso il backend ofg-tool). Prima di editor.js. -->
+  <script src="./src/ai-compose.js"></script>
   <script src="./src/editor.js"></script>
 </body>
 </html>
