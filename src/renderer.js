@@ -87,6 +87,30 @@
     return theme === 'dark' ? 'dark' : (theme === 'light' ? 'light' : 'light');
   }
 
+  /* Etichette di tipo per la EYEBROW quando manca il topic.
+     Tengono coerente la sopra-linea su ogni slide della cornice. */
+  /* Cover e closing NON hanno eyebrow di fallback: il logo e' gia' la
+     firma del brand, un kicker "OFG" sarebbe ridondante e si accavalla.
+     Compaiono solo se l'utente imposta un topic esplicito. */
+  var TYPE_LABELS = {
+    cover: '',
+    section: 'Capitolo',
+    text: 'Approfondimento',
+    bullets: 'Punti chiave',
+    kpi: 'Numeri',
+    quote: 'Citazione',
+    image: 'Visual',
+    split: 'Focus',
+    closing: '',
+    table: 'Dati'
+  };
+
+  /* Numero a due cifre con padding ('3' -> '03'). */
+  function pad2(n) {
+    n = String(n);
+    return n.length < 2 ? '0' + n : n;
+  }
+
   /* --------------------------------------------------------
      COMPONENTI RIUSABILI
      -------------------------------------------------------- */
@@ -192,12 +216,50 @@
     return media;
   }
 
-  /* Logo firma (lo styling/sorgente nero-vs-negativo e' gestito da
-     CSS via --logo-src del tema). br=true posiziona in basso a destra. */
-  function buildLogo(br) {
-    var logo = el('span', 'slide__logo' + (br ? ' slide__logo--br' : ''));
+  /* Logo firma della cornice: posizione FISSA in alto a sinistra su
+     TUTTE le slide. Renderizzato UNA sola volta per slide (in
+     renderSlide), mai dentro i singoli render per tipo: cosi' non si
+     sovrappone mai al contenuto. Sorgente nero/negativo via --logo-src. */
+  function buildLogo() {
+    var logo = el('span', 'slide__logo');
     logo.setAttribute('aria-hidden', 'true');
     return logo;
+  }
+
+  /* EYEBROW / KICKER della cornice: sopra-linea uppercase sopra il
+     titolo. Usa slide.topic se presente, altrimenti l'etichetta del
+     tipo. E' un .reveal (entra per primo, --i = 0). */
+  function buildEyebrow(slide, type) {
+    var label = (slide.topic && String(slide.topic).trim())
+      ? String(slide.topic).trim()
+      : (TYPE_LABELS[type] || '');
+    if (!label) return null;
+    var eb = el('p', 'eyebrow');
+    eb.textContent = label; /* testo grezzo: niente HTML inline qui */
+    reveal(eb, 0, 'fade');
+    return eb;
+  }
+
+  /* NUMERO SLIDE della cornice: indicatore discreto in basso a destra
+     "NN / TOT". Il totale arriva via --slide-total (impostato in
+     renderDeck); qui scriviamo l'indice e leggiamo il totale via CSS
+     counter non e' affidabile, quindi passiamo total esplicito quando
+     disponibile e lasciamo il fallback su attributo. */
+  function buildPageNo(index, total) {
+    var n = (typeof index === 'number' ? index : 0) + 1;
+    var box = el('div', 'slide__pageno');
+    box.setAttribute('aria-hidden', 'true');
+    var b = el('b');
+    b.textContent = pad2(n);
+    box.appendChild(b);
+    if (typeof total === 'number' && total > 0) {
+      var sep = document.createTextNode('/');
+      var i = el('i');
+      i.textContent = pad2(total);
+      box.appendChild(sep);
+      box.appendChild(i);
+    }
+    return box;
   }
 
   /* --------------------------------------------------------
@@ -207,9 +269,10 @@
      -------------------------------------------------------- */
 
   function renderCover(slide, inner) {
-    inner.appendChild(buildLogo(true));
+    var eb = buildEyebrow(slide, 'cover');
+    if (eb) inner.appendChild(eb);
 
-    var i = 0;
+    var i = 1;
     if (slide.title) {
       var t = el('h1', 'cover__title');
       setHTML(t, slide.title);
@@ -231,13 +294,18 @@
   }
 
   function renderSection(slide, inner) {
-    inner.appendChild(buildLogo(false));
-
     var i = 0;
-    var bar = el('span', 'bar reveal');
-    bar.style.setProperty('--i', String(i++));
-    bar.setAttribute('aria-hidden', 'true');
-    inner.appendChild(bar);
+
+    /* Numero di capitolo gigante in outline giallo (deriva dall'index). */
+    var num = el('div', 'section__num');
+    var idx = (typeof slide.index === 'number' ? slide.index : 0) + 1;
+    num.textContent = pad2(idx);
+    num.setAttribute('aria-hidden', 'true');
+    reveal(num, i++, 'left');
+    inner.appendChild(num);
+
+    var eb = buildEyebrow(slide, 'section');
+    if (eb) { reveal(eb, i++, 'fade'); inner.appendChild(eb); }
 
     if (slide.title) {
       var t = el('h2', 'section__title');
@@ -245,6 +313,12 @@
       reveal(t, i++, 'left');
       inner.appendChild(t);
     }
+
+    var bar = el('span', 'bar reveal');
+    bar.style.setProperty('--i', String(i++));
+    bar.setAttribute('aria-hidden', 'true');
+    inner.appendChild(bar);
+
     if (slide.subtitle) {
       var s = el('p', 'subtitle');
       setHTML(s, slide.subtitle);
@@ -254,8 +328,9 @@
   }
 
   function renderText(slide, inner) {
-    inner.appendChild(buildLogo(false));
     var i = 0;
+    var eb = buildEyebrow(slide, 'text');
+    if (eb) { reveal(eb, i++, 'fade'); inner.appendChild(eb); }
     if (slide.title) { inner.appendChild(buildHeading(slide.title, i)); i += 2; }
     if (slide.subtitle) {
       var s = el('p', 'subtitle');
@@ -267,8 +342,9 @@
   }
 
   function renderBullets(slide, inner) {
-    inner.appendChild(buildLogo(false));
     var i = 0;
+    var eb = buildEyebrow(slide, 'bullets');
+    if (eb) { reveal(eb, i++, 'fade'); inner.appendChild(eb); }
     if (slide.title) { inner.appendChild(buildHeading(slide.title, i)); i += 2; }
     if (slide.subtitle) {
       var s = el('p', 'subtitle');
@@ -288,8 +364,9 @@
   }
 
   function renderKpi(slide, inner) {
-    inner.appendChild(buildLogo(false));
     var i = 0;
+    var eb = buildEyebrow(slide, 'kpi');
+    if (eb) { reveal(eb, i++, 'fade'); inner.appendChild(eb); }
     if (slide.title) { inner.appendChild(buildHeading(slide.title, i)); i += 2; }
 
     var grid = el('div', 'kpi-grid');
@@ -312,8 +389,9 @@
   }
 
   function renderQuote(slide, inner) {
-    inner.appendChild(buildLogo(false));
     var i = 0;
+    var eb = buildEyebrow(slide, 'quote');
+    if (eb) { reveal(eb, i++, 'fade'); inner.appendChild(eb); }
 
     var mark = el('div', 'quote__mark');
     mark.textContent = '“'; /* virgolette caporali aperte */
@@ -340,8 +418,9 @@
     /* La foto piena va FUORI da .slide__inner (sotto, coprente);
        l'inner contiene solo il titolo in overlay. La gestiamo in
        renderSlide aggiungendo la media direttamente alla section. */
-    inner.appendChild(buildLogo(false));
     var i = 0;
+    var eb = buildEyebrow(slide, 'image');
+    if (eb) { reveal(eb, i++, 'fade'); inner.appendChild(eb); }
     if (slide.title) {
       var h = el('h2', 'h2');
       setHTML(h, slide.title);
@@ -359,9 +438,10 @@
   function renderSplit(slide, inner) {
     /* Layout a due colonne: testo a sinistra, media a destra. */
     var textCol = el('div', 'split__text');
-    textCol.appendChild(buildLogo(false));
 
     var i = 0;
+    var eb = buildEyebrow(slide, 'split');
+    if (eb) { reveal(eb, i++, 'fade'); textCol.appendChild(eb); }
     if (slide.title) { textCol.appendChild(buildHeading(slide.title, i)); i += 2; }
     if (slide.subtitle) {
       var s = el('p', 'subtitle');
@@ -381,8 +461,9 @@
   }
 
   function renderClosing(slide, inner) {
-    inner.appendChild(buildLogo(true));
     var i = 0;
+    var eb = buildEyebrow(slide, 'closing');
+    if (eb) { reveal(eb, i++, 'fade'); inner.appendChild(eb); }
     if (slide.title) {
       var t = el('h2', 'closing__title');
       setHTML(t, slide.title);
@@ -405,8 +486,9 @@
 
   /* Slide TABELLA: titolo opzionale + tabella dati on-brand. */
   function renderTable(slide, inner) {
-    inner.appendChild(buildLogo(false));
     var i = 0;
+    var eb = buildEyebrow(slide, 'table');
+    if (eb) { reveal(eb, i++, 'fade'); inner.appendChild(eb); }
     if (slide.title) { inner.appendChild(buildHeading(slide.title, i)); i += 2; }
 
     var t = slide.table || { headers: [], rows: [] };
@@ -459,7 +541,7 @@
   /* --------------------------------------------------------
      RENDER DI UNA SLIDE COMPLETA
      -------------------------------------------------------- */
-  function renderSlide(slide) {
+  function renderSlide(slide, total) {
     slide = slide || {};
     var type = RENDERERS[slide.type] ? slide.type : 'text';
     var theme = resolveTheme(slide.theme);
@@ -492,6 +574,18 @@
     RENDERERS[type](slide, inner);
     section.appendChild(inner);
 
+    /* CORNICE COERENTE: logo + numero slide, identici su OGNI slide.
+       Renderizzati UNA sola volta qui (mai nei render per tipo), in
+       posizione fissa, fuori dal flusso del contenuto: non si
+       sovrappongono mai al testo. */
+    section.appendChild(buildLogo());
+
+    /* Totale: argomento esplicito (renderDeck) oppure --slide-total
+       letto dal container in fase di export/montaggio. Se ignoto,
+       mostriamo solo il numero corrente. */
+    var tot = (typeof total === 'number' && total > 0) ? total : 0;
+    section.appendChild(buildPageNo(index, tot));
+
     return section;
   }
 
@@ -516,13 +610,20 @@
     container.classList.add('deck--' + mode);
     container.setAttribute('data-mode', mode);
 
+    /* Totale slide per l'indicatore "NN / TOT" della cornice:
+       impostato come variabile CSS sul container (robusto, leggibile
+       sia in app sia nell'export) e passato a renderSlide. */
+    var total = slides.length;
+    container.style.setProperty('--slide-total', String(total));
+    container.setAttribute('data-total', String(total));
+
     /* Crea le slide. Usiamo un fragment per un singolo reflow. */
     var frag = document.createDocumentFragment();
     for (var i = 0; i < slides.length; i++) {
       /* Garantiamo che l'index del DOM segua la posizione reale. */
       var model = slides[i];
       if (model && typeof model.index !== 'number') model.index = i;
-      frag.appendChild(renderSlide(model));
+      frag.appendChild(renderSlide(model, total));
     }
     container.appendChild(frag);
 
@@ -532,8 +633,8 @@
   /* --------------------------------------------------------
      HTML STRINGA (per export statico)
      -------------------------------------------------------- */
-  function renderSlideHTML(slide) {
-    var node = renderSlide(slide);
+  function renderSlideHTML(slide, total) {
+    var node = renderSlide(slide, total);
     return node.outerHTML;
   }
 
