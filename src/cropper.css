@@ -1,0 +1,262 @@
+/* ============================================================
+   cropper.css — Stile widget ritaglio/posizionamento foto OFG
+   Legge le variabili da design-tokens.css (colori brand, raggi,
+   spaziature, ombre, durate, z-index). Prefisso classi .cropper.
+   ============================================================ */
+
+/* ---------- Overlay a tutto schermo ---------- */
+.cropper__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-5);
+  background: rgba(0, 0, 0, 0.72);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  animation: cropper-fade var(--dur-fast) var(--ease-out);
+}
+
+@keyframes cropper-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ---------- Card centrale ---------- */
+.cropper__card {
+  width: min(560px, 100%);
+  max-height: calc(100vh - var(--sp-7));
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  padding: var(--sp-6);
+  background: var(--white);
+  color: var(--ink);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  font-family: var(--font-sans);
+  animation: cropper-pop var(--dur-base) var(--ease-out);
+}
+
+@keyframes cropper-pop {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+.cropper__title {
+  margin: 0;
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-tight);
+  line-height: var(--lh-heading);
+}
+
+/* ---------- Anteprima 16:9 ---------- */
+.cropper__stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;                 /* clip del transform:scale */
+  border-radius: var(--radius-sm);
+  background: var(--black);
+  cursor: crosshair;
+  touch-action: none;               /* abilita il drag con pointer su touch */
+  outline: none;
+  user-select: none;
+}
+
+.cropper__stage:focus-visible {
+  box-shadow: 0 0 0 3px var(--yellow);
+}
+
+.cropper__stage.is-dragging {
+  cursor: grabbing;
+}
+
+.cropper__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* object-fit / object-position / transform impostati inline via JS */
+  transform-origin: center center;
+  pointer-events: none;             /* il drag avviene sullo stage */
+  -webkit-user-drag: none;
+}
+
+/* Mirino punto focale (cerchietto giallo) */
+.cropper__focal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--yellow);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 0, 0.18);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 1px 4px rgba(0, 0, 0, 0.4);
+  pointer-events: none;             /* non intercetta il drag */
+}
+
+.cropper__focal::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  transform: translate(-50%, -50%);
+  border-radius: var(--radius-pill);
+  background: var(--yellow);
+}
+
+/* ---------- Controlli ---------- */
+.cropper__controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.cropper__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.cropper__label {
+  flex: 0 0 auto;
+  min-width: 96px;
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  color: var(--ink-soft);
+}
+
+/* Toggle FIT (cover / contain) */
+.cropper__toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+
+.cropper__toggle-btn {
+  appearance: none;
+  border: 0;
+  margin: 0;
+  padding: var(--sp-2) var(--sp-4);
+  font-family: inherit;
+  font-size: var(--fs-small);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-soft);
+  background: transparent;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out);
+}
+
+.cropper__toggle-btn:hover {
+  color: var(--ink);
+}
+
+.cropper__toggle-btn.is-active {
+  background: var(--black);
+  color: var(--white);
+}
+
+.cropper__toggle-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--yellow);
+}
+
+/* Slider zoom */
+.cropper__slider {
+  flex: 1 1 auto;
+  width: 100%;
+  accent-color: var(--black);
+  cursor: pointer;
+}
+
+.cropper__slider:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--yellow);
+  border-radius: var(--radius-pill);
+}
+
+.cropper__value {
+  flex: 0 0 auto;
+  min-width: 48px;
+  text-align: right;
+  font-size: var(--fs-small);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* ---------- Azioni ---------- */
+.cropper__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+}
+
+.cropper__btn {
+  appearance: none;
+  margin: 0;
+  padding: var(--sp-3) var(--sp-6);
+  font-family: inherit;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-tight);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out),
+              background var(--dur-fast) var(--ease-out),
+              opacity var(--dur-fast) var(--ease-out);
+}
+
+.cropper__btn:active {
+  transform: translateY(1px);
+}
+
+.cropper__btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--yellow), 0 0 0 5px var(--black);
+}
+
+.cropper__btn--ghost {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+}
+
+.cropper__btn--ghost:hover {
+  background: var(--paper);
+}
+
+.cropper__btn--primary {
+  border: 1px solid var(--black);
+  background: var(--yellow);
+  color: var(--black);
+}
+
+.cropper__btn--primary:hover {
+  opacity: 0.9;
+}
+
+/* ---------- Rispetto delle preferenze di movimento ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .cropper__overlay,
+  .cropper__card {
+    animation: none;
+  }
+}
