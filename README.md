@@ -22,6 +22,12 @@ font **Raleway** (`.ttf` locali). Funziona aprendo `index.html` da disco e su
 - Microanimazioni d'ingresso (reveal con stagger, draw-in della barretta gialla),
   con pieno rispetto di `prefers-reduced-motion`.
 - Trattamento foto on-brand (placeholder geometrico elegante se l'immagine manca).
+- **Gestione foto integrata**: trascini o incolli un'immagine, l'app la **comprime**
+  e la salva nel progetto (data URI), con una **galleria** per reinserirla. Le foto
+  finiscono inline anche nell'HTML esportato (nessun path rotto).
+- **Import PowerPoint / Google Slides**: importa un file `.pptx` estraendone **testo
+  e immagini** e ri-brandizzandolo in stile OFG (per Google Slides: *File → Scarica →
+  PowerPoint .pptx*, poi importa).
 - Export di un file HTML autonomo (CSS + JS inline) pronto per la condivisione.
 
 ---
@@ -34,9 +40,14 @@ font **Raleway** (`.ttf` locali). Funziona aprendo `index.html` da disco e su
    in tempo reale. All'avvio viene caricato `samples/esempio.md` come demo.
 3. Usa la toolbar in alto per:
    - **Carica .md** — importa un file markdown (anche via drag & drop sul pannello sorgente).
+   - **Importa PPT** — importa un `.pptx` (PowerPoint o Google Slides scaricato in `.pptx`):
+     testo e immagini vengono estratti e convertiti nel markdown OFG.
    - **Modalita'** — passa tra `Deck` e `Landing`.
    - **Tema** — `Auto` (rispetta il tema di ogni slide), `Chiaro` o `Scuro` (forza tutte).
    - **Esporta HTML** — scarica la presentazione come file autonomo.
+5. **Foto**: trascina immagini sul pannello sorgente, **incollale** (Ctrl/Cmd+V) nel
+   testo, o usa la **galleria Immagini** in basso a sinistra: ogni foto diventa un
+   token `![](img:ID)` e cliccando una miniatura la reinserisci dove vuoi.
 4. Navigazione in anteprima: frecce `←/→`, `PageUp/PageDown`, `Spazio`, `Home/End`;
    click su dots/frecce. In landing: `←/→` cambia topic, `↑/↓` scorre dentro il topic.
 
@@ -60,7 +71,7 @@ ritrovi il tuo lavoro.
 | Citazione         | `> testo`                                 | `body`       |
 | Bullet            | `- voce` o `* voce`                       | `bullets[]`  |
 | KPI               | `valore \| etichetta`                     | `kpi[]`      |
-| Immagine          | `![](path)` o `image: path`               | `image`      |
+| Immagine          | `![](path)`, `![](img:ID)` o `image: path` | `image`     |
 | Tema              | `theme: dark` / `theme: light`            | `theme`      |
 | Topic (landing)   | `topic: NomeColonna`                      | `topic`      |
 | Note presentatore | `note: ...`                               | `note`       |
@@ -124,8 +135,12 @@ src/editor.css          stili interfaccia editor + layout navigazione
 src/parser.js           markdown -> Slide[]  (window.OFG.parse)
 src/renderer.js         Slide -> DOM         (window.OFG.renderSlide/renderDeck)
 src/engine.js           navigazione deck/landing  (window.OFG.Engine)
-src/editor.js           UI editor, preview live, toggle, export
+src/editor.js           UI editor, preview live, toggle, export, foto, import PPT
 src/export.js           HTML autonomo scaricabile (window.OFG.exportHTML)
+src/images.js           store immagini + galleria (window.OFG.images)
+src/images.css          stili galleria/dropzone immagini
+src/import-pptx.js      import .pptx -> markdown OFG (window.OFG.importPptx)
+src/vendor/jszip.min.js libreria per leggere lo ZIP .pptx nel browser
 samples/esempio.md      demo con tutti i tipi di slide e due topic
 assets/                 font Raleway (.ttf) + logo OFG (nero / negativo)
 SPEC.md                 contratto tecnico tra i moduli
