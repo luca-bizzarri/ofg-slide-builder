@@ -155,6 +155,8 @@
     if (!this._applyHash()) {
       this._syncToIndex(start, true);
     }
+    /* Adatta il contenuto che eccede il riquadro (testi lunghi, molti bullet). */
+    this._scheduleFit();
   }
 
   /* -----------------------------------------------------------
@@ -400,6 +402,7 @@
       self._scrollRaf = global.requestAnimationFrame(function () {
         self._scrollRaf = 0;
         self._syncToIndex(self.index, false);
+        self._fitAll();
       });
     }, { passive: true });
   };
@@ -748,6 +751,56 @@
     }
     return new Engine(container, opts);
   }
+
+  /* -----------------------------------------------------------
+     AUTO-FIT del contenuto
+     --------------------------------------------------------------
+     Se il contenuto di una slide e' piu' alto/largo del riquadro
+     (testo lungo, >4 bullet, etichette KPI lunghe, ecc.) lo si
+     rimpicciolisce con un transform: scale sull'inner finche' entra.
+     La cornice (logo, numero pagina) e' FUORI dall'inner, quindi non
+     viene scalata. Min 0.5 per non scendere sotto la leggibilita'.
+     Funziona sia nell'anteprima editor sia nell'HTML esportato.
+     ----------------------------------------------------------- */
+  function fitSlideContent(slide) {
+    var inner = slide.querySelector('.slide__inner');
+    if (!inner) return;
+    /* Reset per rimisurare la dimensione naturale. */
+    inner.style.transform = '';
+    inner.style.transformOrigin = 'center center';
+    var availH = slide.clientHeight;
+    var availW = slide.clientWidth;
+    if (!availH || !availW) return;
+    var needH = inner.scrollHeight;
+    var needW = inner.scrollWidth;
+    var scale = 1;
+    if (needH > availH + 1) scale = Math.min(scale, availH / needH);
+    if (needW > availW + 1) scale = Math.min(scale, availW / needW);
+    if (scale < 1) {
+      scale = Math.max(0.5, scale - 0.01); /* piccolo margine di sicurezza */
+      inner.style.transform = 'scale(' + scale + ')';
+    }
+  }
+
+  Engine.prototype._fitAll = function () {
+    if (this._destroyed) return;
+    for (var i = 0; i < this.slides.length; i++) {
+      try { fitSlideContent(this.slides[i]); } catch (e) { /* no-op */ }
+    }
+  };
+
+  /* Esegue il fit appena possibile e di nuovo quando i font sono pronti
+     (Raleway carica async: prima del load le altezze misurate sono errate). */
+  Engine.prototype._scheduleFit = function () {
+    var self = this;
+    var run = function () { self._fitAll(); };
+    if (global.requestAnimationFrame) global.requestAnimationFrame(run); else run();
+    try {
+      if (global.document && document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(run);
+      }
+    } catch (e) { /* no-op */ }
+  };
 
   /* -----------------------------------------------------------
      Esposizione pubblica
