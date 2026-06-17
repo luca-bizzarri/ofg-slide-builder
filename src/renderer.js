@@ -133,7 +133,18 @@
      duotone=true applica il trattamento on-brand nero/giallo. */
   function buildMedia(imageSrc, opts) {
     opts = opts || {};
-    var hasImg = imageSrc && String(imageSrc).trim() !== '';
+
+    /* Risolve i riferimenti "img:ID" dello store immagini (se caricato).
+       OFG.images.resolve restituisce: il dataURI per "img:ID" presenti,
+       null per "img:ID" mancanti, e il valore invariato per url/data/path.
+       Nell'HTML esportato lo store non c'e': li' l'immagine e' gia' stata
+       sostituita col dataURI a monte (vedi export.js), quindi nessun lookup. */
+    var resolved = imageSrc;
+    if (OFG && OFG.images && typeof OFG.images.resolve === 'function'
+        && /^img:/i.test(String(imageSrc))) {
+      resolved = OFG.images.resolve(imageSrc);
+    }
+    var hasImg = resolved && String(resolved).trim() !== '';
 
     var cls = 'media';
     if (opts.duotone) cls += ' media--duotone';
@@ -145,7 +156,7 @@
     if (hasImg) {
       var img = el('img', 'media__img');
       /* image e' GREZZA: usata solo come src, mai come HTML. */
-      img.src = String(imageSrc);
+      img.src = String(resolved);
       img.alt = '';
       img.loading = 'lazy';
       img.decoding = 'async';
