@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="./src/fonts.css">
   <link rel="stylesheet" href="./src/slides.css">
   <link rel="stylesheet" href="./src/editor.css">
+  <link rel="stylesheet" href="./src/images.css">
 </head>
 <body>
   <!-- Shell applicazione: toolbar in alto, due pannelli sotto. -->
@@ -27,6 +28,13 @@
         <input type="file" id="file-input" class="file-input"
                accept=".md,.markdown,.txt" aria-label="Carica file markdown">
         <label for="file-input" class="btn" role="button" tabindex="0">Carica .md</label>
+      </div>
+
+      <!-- Importa PowerPoint / Google Slides (esportato in .pptx) -->
+      <div class="toolbar__group">
+        <input type="file" id="pptx-input" class="file-input"
+               accept=".pptx" aria-label="Importa PowerPoint">
+        <label for="pptx-input" class="btn" role="button" tabindex="0">Importa PPT</label>
       </div>
 
       <!-- Modalita' deck / landing -->
@@ -71,6 +79,12 @@
                   placeholder="Scrivi qui il markdown. Una slide per blocco, separati da ---"></textarea>
         <!-- Avvisi gentili (parsing, caricamento, export). -->
         <div id="notice" class="notice" role="status" aria-live="polite"></div>
+
+        <!-- Galleria immagini: trascina/incolla foto, clicca per inserirle. -->
+        <details class="imglib-panel" id="image-panel" open>
+          <summary class="imglib-panel__head">Immagini · trascina o incolla, clicca per inserire</summary>
+          <div id="image-gallery" class="imglib"></div>
+        </details>
       </section>
 
       <!-- Pannello anteprima (destra) -->
@@ -95,6 +109,11 @@
   <script src="./src/renderer.js"></script>
   <script src="./src/engine.js"></script>
   <script src="./src/export.js"></script>
+  <!-- Gestione immagini + import PPTX (JSZip vendorizzato). images.js
+       prima di editor.js e di import-pptx.js (entrambi lo usano). -->
+  <script src="./src/vendor/jszip.min.js"></script>
+  <script src="./src/images.js"></script>
+  <script src="./src/import-pptx.js"></script>
   <script src="./src/editor.js"></script>
 </body>
 </html>
