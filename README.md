@@ -28,6 +28,12 @@ font **Raleway** (`.ttf` locali). Funziona aprendo `index.html` da disco e su
 - **Import PowerPoint / Google Slides**: importa un file `.pptx` estraendone **testo
   e immagini** e ri-brandizzandolo in stile OFG (per Google Slides: *File → Scarica →
   PowerPoint .pptx*, poi importa).
+- **Tabelle**: tipo slide `:: table` con grafica on-brand (intestazione gialla, righe
+  alternate). Crei la tabella incollando da Excel (Ctrl/Cmd+V), caricando un `.xlsx`/`.csv`
+  o col bottone **+ Tabella**.
+- **Foto: ritaglio e posizionamento** non distruttivi (fit, punto focale, zoom) dalla
+  **modalita' Layout**, e **drag-drop delle foto nei placeholder** direttamente sull'anteprima.
+- **Riordino slide** trascinando le miniature nel pannello *Ordina slide*.
 - Export di un file HTML autonomo (CSS + JS inline) pronto per la condivisione.
 
 ---
@@ -42,6 +48,9 @@ font **Raleway** (`.ttf` locali). Funziona aprendo `index.html` da disco e su
    - **Carica .md** — importa un file markdown (anche via drag & drop sul pannello sorgente).
    - **Importa PPT** — importa un `.pptx` (PowerPoint o Google Slides scaricato in `.pptx`):
      testo e immagini vengono estratti e convertiti nel markdown OFG.
+   - **Importa Excel** — carica `.xlsx`/`.csv` come slide tabella; **+ Tabella** inserisce una tabella d'esempio.
+   - **Layout** — modalita' di lavoro visuale: clicca una foto per ritagliarla/posizionarla,
+     trascina foto nei riquadri vuoti delle slide.
    - **Modalita'** — passa tra `Deck` e `Landing`.
    - **Tema** — `Auto` (rispetta il tema di ogni slide), `Chiaro` o `Scuro` (forza tutte).
    - **Esporta HTML** — scarica la presentazione come file autonomo.
@@ -72,6 +81,8 @@ ritrovi il tuo lavoro.
 | Bullet            | `- voce` o `* voce`                       | `bullets[]`  |
 | KPI               | `valore \| etichetta`                     | `kpi[]`      |
 | Immagine          | `![](path)`, `![](img:ID)` o `image: path` | `image`     |
+| Inquadratura foto | `![](img:ID){fit:cover; pos:60,30; zoom:1.2}` | `imageOpts` |
+| Tabella           | tipo `:: table` + tabella a pipe `\| a \| b \|` | `table`   |
 | Tema              | `theme: dark` / `theme: light`            | `theme`      |
 | Topic (landing)   | `topic: NomeColonna`                      | `topic`      |
 | Note presentatore | `note: ...`                               | `note`       |
@@ -140,7 +151,12 @@ src/export.js           HTML autonomo scaricabile (window.OFG.exportHTML)
 src/images.js           store immagini + galleria (window.OFG.images)
 src/images.css          stili galleria/dropzone immagini
 src/import-pptx.js      import .pptx -> markdown OFG (window.OFG.importPptx)
+src/import-table.js     import Excel/CSV/incolla -> tabella (window.OFG.tables)
+src/blocks.js           manipolazione blocchi markdown: riordino, immagini (window.OFG.blocks)
+src/cropper.js          widget ritaglio/posizione/zoom foto (window.OFG.Cropper)
+src/cropper.css         stili del cropper
 src/vendor/jszip.min.js libreria per leggere lo ZIP .pptx nel browser
+src/vendor/xlsx.full.min.js  libreria SheetJS per leggere .xlsx/.csv
 samples/esempio.md      demo con tutti i tipi di slide e due topic
 assets/                 font Raleway (.ttf) + logo OFG (nero / negativo)
 SPEC.md                 contratto tecnico tra i moduli
