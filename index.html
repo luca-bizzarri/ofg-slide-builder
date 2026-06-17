@@ -18,37 +18,79 @@
   <!-- Shell applicazione: toolbar in alto, due pannelli sotto. -->
   <div class="app">
 
-    <!-- ============ TOOLBAR ============ -->
+    <!-- ============ TOOLBAR ============
+         Comandi raggruppati in menu a tendina (File, Importa, Inserisci)
+         per non affollare la barra. Gli input file restano dentro le
+         voci di menu (stessi id di prima). I controlli "vivi" (Layout,
+         Modalita', Tema) restano diretti a destra. -->
     <header class="toolbar">
       <span class="toolbar__brand">OFG · Slide Builder</span>
 
+      <!-- Menu FILE: apri/salva progetto + esporta HTML -->
+      <div class="menu" data-menu="file">
+        <button type="button" class="btn menu__btn" id="menu-file-btn"
+                aria-haspopup="menu" aria-expanded="false" aria-controls="menu-file-panel">
+          File
+        </button>
+        <ul class="menu__panel" id="menu-file-panel" role="menu" aria-labelledby="menu-file-btn">
+          <li role="none">
+            <input type="file" id="ofg-input" class="file-input"
+                   accept=".ofg,.json" aria-label="Apri progetto">
+            <label for="ofg-input" class="menu__item" id="btn-open-project"
+                   role="menuitem" tabindex="-1">Apri progetto…</label>
+          </li>
+          <li role="none">
+            <button type="button" class="menu__item" id="btn-save-project"
+                    role="menuitem" tabindex="-1">Salva progetto</button>
+          </li>
+          <li class="menu__sep" role="separator"></li>
+          <li role="none">
+            <button type="button" class="menu__item" id="btn-export"
+                    role="menuitem" tabindex="-1">Esporta HTML</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Menu IMPORTA: markdown, PowerPoint/Google Slides, Excel/CSV -->
+      <div class="menu" data-menu="import">
+        <button type="button" class="btn menu__btn" id="menu-import-btn"
+                aria-haspopup="menu" aria-expanded="false" aria-controls="menu-import-panel">
+          Importa
+        </button>
+        <ul class="menu__panel" id="menu-import-panel" role="menu" aria-labelledby="menu-import-btn">
+          <li role="none">
+            <input type="file" id="file-input" class="file-input"
+                   accept=".md,.markdown,.txt" aria-label="Carica file markdown">
+            <label for="file-input" class="menu__item" role="menuitem" tabindex="-1">Markdown .md</label>
+          </li>
+          <li role="none">
+            <input type="file" id="pptx-input" class="file-input"
+                   accept=".pptx" aria-label="Importa PowerPoint">
+            <label for="pptx-input" class="menu__item" role="menuitem" tabindex="-1">PowerPoint / Google Slides</label>
+          </li>
+          <li role="none">
+            <input type="file" id="xlsx-input" class="file-input"
+                   accept=".xlsx,.xls,.csv" aria-label="Importa Excel">
+            <label for="xlsx-input" class="menu__item" role="menuitem" tabindex="-1">Excel / CSV</label>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Menu INSERISCI: tabella d'esempio -->
+      <div class="menu" data-menu="insert">
+        <button type="button" class="btn menu__btn" id="menu-insert-btn"
+                aria-haspopup="menu" aria-expanded="false" aria-controls="menu-insert-panel">
+          Inserisci
+        </button>
+        <ul class="menu__panel" id="menu-insert-panel" role="menu" aria-labelledby="menu-insert-btn">
+          <li role="none">
+            <button type="button" class="menu__item" id="btn-add-table"
+                    role="menuitem" tabindex="-1">Tabella</button>
+          </li>
+        </ul>
+      </div>
+
       <span class="toolbar__spacer"></span>
-
-      <!-- Carica file .md -->
-      <div class="toolbar__group">
-        <input type="file" id="file-input" class="file-input"
-               accept=".md,.markdown,.txt" aria-label="Carica file markdown">
-        <label for="file-input" class="btn" role="button" tabindex="0">Carica .md</label>
-      </div>
-
-      <!-- Importa PowerPoint / Google Slides (esportato in .pptx) -->
-      <div class="toolbar__group">
-        <input type="file" id="pptx-input" class="file-input"
-               accept=".pptx" aria-label="Importa PowerPoint">
-        <label for="pptx-input" class="btn" role="button" tabindex="0">Importa PPT</label>
-      </div>
-
-      <!-- Importa foglio di calcolo (.xlsx/.xls/.csv) come tabella -->
-      <div class="toolbar__group">
-        <input type="file" id="xlsx-input" class="file-input"
-               accept=".xlsx,.xls,.csv" aria-label="Importa Excel">
-        <label for="xlsx-input" class="btn" role="button" tabindex="0">Importa Excel</label>
-      </div>
-
-      <!-- Inserisci una tabella d'esempio -->
-      <div class="toolbar__group">
-        <button type="button" id="btn-add-table" class="btn">+ Tabella</button>
-      </div>
 
       <!-- Modalita' di lavoro visuale (ritaglio foto + drop su slide) -->
       <div class="toolbar__group">
@@ -78,9 +120,6 @@
                   aria-pressed="false">Scuro</button>
         </div>
       </div>
-
-      <!-- Export -->
-      <button type="button" id="btn-export" class="btn btn--primary">Esporta HTML</button>
     </header>
 
     <!-- ============ WORKSPACE: sorgente | anteprima ============ -->
@@ -144,6 +183,8 @@
   <script src="./src/import-table.js"></script>
   <script src="./src/blocks.js"></script>
   <script src="./src/cropper.js"></script>
+  <!-- Salva/apri progetto (.ofg): markdown + immagini + impostazioni. -->
+  <script src="./src/project.js"></script>
   <script src="./src/editor.js"></script>
 </body>
 </html>
