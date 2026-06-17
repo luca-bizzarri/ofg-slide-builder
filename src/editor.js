@@ -54,6 +54,16 @@
     '- ==Modifica== e guarda l\'anteprima aggiornarsi'
   ].join('\n');
 
+  /* Blocco tabella d'esempio inserito dal bottone "+ Tabella". */
+  var SAMPLE_TABLE_MD = [
+    ':: table',
+    '# Tabella d\'esempio',
+    '| Colonna A | Colonna B | Colonna C |',
+    '| --- | --- | --- |',
+    '| Valore 1 | Valore 2 | Valore 3 |',
+    '| Valore 4 | Valore 5 | Valore 6 |'
+  ].join('\n');
+
   /* --------------------------------------------------------
      UTILITY
      -------------------------------------------------------- */
@@ -98,6 +108,7 @@
     this.theme = 'auto';         // 'auto' | 'light' | 'dark' (override globale)
     this.slides = [];            // ultimi modelli parse-ati
     this.engine = null;          // istanza OFG.Engine corrente
+    this.layout = false;         // modalita' di lavoro visuale (ritaglio/drop foto)
     this._noticeTimer = 0;
 
     this._cacheDom();
@@ -120,6 +131,12 @@
     this.elBtnExport = q(r, '#btn-export');
     this.elPptxInput = q(r, '#pptx-input');
     this.elGallery = q(r, '#image-gallery');
+
+    /* Nuovi controlli: import Excel, +Tabella, toggle Layout, striscia riordino. */
+    this.elXlsxInput = q(r, '#xlsx-input');
+    this.elBtnAddTable = q(r, '#btn-add-table');
+    this.elBtnLayout = q(r, '#btn-layout');
+    this.elStrip = q(r, '#slide-strip');
 
     /* Toggle a segmenti modalita' e tema. */
     this.modeBtns = r.querySelectorAll
@@ -198,6 +215,23 @@
         if (imgs.length) {
           ev.preventDefault();
           self._addImageFiles(imgs);
+          return;
+        }
+        /* Niente immagini: se il testo incollato sembra una tabella Excel
+           (TSV), lo convertiamo in un blocco ':: table'. */
+        if (OFG.tables && OFG.tables.isTSV) {
+          var text = ev.clipboardData.getData ? ev.clipboardData.getData('text/plain') : '';
+          if (text && OFG.tables.isTSV(text)) {
+            ev.preventDefault();
+            try {
+              var table = OFG.tables.fromTSV(text);
+              var block = OFG.tables.toMarkdown(table, {});
+              self._appendBlock(block);
+              self._showNotice('info', 'Tabella incollata da Excel.');
+            } catch (e) {
+              self._showNotice('error', 'Impossibile interpretare la tabella incollata.');
+            }
+          }
         }
       });
     }
@@ -220,6 +254,57 @@
     if (this.elBtnExport) {
       this.elBtnExport.addEventListener('click', function () { self._export(); });
     }
+
+    /* --- Importa Excel/CSV via input --- */
+    if (this.elXlsxInput) {
+      this.elXlsxInput.addEventListener('change', function (ev) {
+        var file = ev.target.files && ev.target.files[0];
+        if (file) self._importTable(file);
+        ev.target.value = '';
+      });
+    }
+
+    /* --- Bottone "+ Tabella": inserisce un blocco d'esempio --- */
+    if (this.elBtnAddTable) {
+      this.elBtnAddTable.addEventListener('click', function () {
+        self._appendBlock(SAMPLE_TABLE_MD);
+        self._showNotice('info', 'Tabella d\'esempio aggiunta.');
+      });
+    }
+
+    /* --- Toggle modalita' Layout --- */
+    if (this.elBtnLayout) {
+      this.elBtnLayout.addEventListener('click', function () { self._toggleLayout(); });
+    }
+
+    /* --- Modalita' Layout: click su immagine + drop foto sulle slide
+       dell'anteprima. I listener stanno sul contenitore: delegano in
+       base al target/closest('[data-index]'). Attivi solo se layout=on. --- */
+    if (this.elPreview) {
+      this.elPreview.addEventListener('click', function (e) {
+        if (!self.layout) return;
+        self._onPreviewClick(e);
+      });
+      var stopPv = function (e) { e.preventDefault(); e.stopPropagation(); };
+      ['dragenter', 'dragover'].forEach(function (t) {
+        self.elPreview.addEventListener(t, function (e) {
+          if (!self.layout) return;
+          stopPv(e);
+          var slide = e.target && e.target.closest && e.target.closest('[data-index]');
+          if (slide) slide.classList.add('is-drop-target');
+        });
+      });
+      self.elPreview.addEventListener('dragleave', function (e) {
+        if (!self.layout) return;
+        var slide = e.target && e.target.closest && e.target.closest('[data-index]');
+        if (slide) slide.classList.remove('is-drop-target');
+      });
+      self.elPreview.addEventListener('drop', function (e) {
+        if (!self.layout) return;
+        stopPv(e);
+        self._onPreviewDrop(e);
+      });
+    }
   };
 
   /* Avvio: carica il sorgente (autosave > sample esterno > starter)
@@ -237,6 +322,9 @@
     }
     this._syncControls();
     this._mountGallery();
+    /* Inizializza la striscia di riordino anche dopo il primo boot
+       (il render l'ha gia' costruita, qui garantiamo lo stato). */
+    this._renderStrip();
   };
 
   /* Carica il sample dimostrativo (best-effort). */
@@ -276,6 +364,9 @@
       return;
     }
     this.slides = Array.isArray(slides) ? slides : [];
+
+    /* 1b) Ricostruisci la striscia di riordino (sempre, anche se 0 slide). */
+    this._renderStrip();
 
     /* 2) Applica eventuale override di tema globale (auto = lascia
        il tema risolto dal parser per ogni slide). */
@@ -417,18 +508,21 @@
      immagini -> store, .pptx -> import, altro -> markdown. */
   Editor.prototype._handleDroppedFiles = function (fileList) {
     var files = Array.prototype.slice.call(fileList);
-    var images = [], md = null, pptx = null;
+    var images = [], md = null, pptx = null, sheet = null;
     for (var i = 0; i < files.length; i++) {
       var n = (files[i].name || '').toLowerCase();
       if (/^image\//.test(files[i].type) || /\.(png|jpe?g|gif|webp|svg|avif)$/.test(n)) {
         images.push(files[i]);
       } else if (/\.pptx$/.test(n)) {
         pptx = pptx || files[i];
+      } else if (/\.(xlsx|xls|csv)$/.test(n)) {
+        sheet = sheet || files[i];
       } else {
         md = md || files[i]; // .md/.txt o sconosciuto: tentiamo come markdown
       }
     }
     if (pptx) { this._importPptx(pptx); return; }
+    if (sheet) { this._importTable(sheet); return; }
     if (images.length) { this._addImageFiles(images); return; }
     if (md) this._loadFile(md);
   };
@@ -522,6 +616,298 @@
         'Import non riuscito: ' + (err && err.message ? err.message : 'file non valido') + '.');
     });
   };
+
+  /* --------------------------------------------------------
+     TABELLE (import Excel/CSV + inserimento blocco)
+     -------------------------------------------------------- */
+
+  /* Appende un blocco markdown gia' formattato come nuova slide in coda
+     al sorgente, poi ri-renderizza e salva. Usa OFG.blocks.join quando
+     disponibile (separatore canonico), altrimenti concatena a mano. */
+  Editor.prototype._appendBlock = function (block) {
+    if (!this.elSource || !block) return;
+    var current = this.elSource.value;
+    var next;
+    if (OFG.blocks && OFG.blocks.split && OFG.blocks.join) {
+      var blocks = OFG.blocks.split(current);
+      /* Scarta un eventuale blocco vuoto finale per non lasciare buchi. */
+      if (blocks.length === 1 && blocks[0].trim() === '') blocks = [];
+      blocks.push(block);
+      next = OFG.blocks.join(blocks);
+    } else {
+      next = current.trim() === '' ? block : (current + '\n\n---\n\n' + block);
+    }
+    this.elSource.value = next;
+    this._render();
+    this._persist();
+  };
+
+  /* Importa un foglio di calcolo (.xlsx/.xls/.csv) come blocco tabella:
+     legge il primo foglio, lo converte in markdown ':: table' e lo
+     appende come nuova slide. Degrada se il modulo manca. */
+  Editor.prototype._importTable = function (file) {
+    var self = this;
+    if (!OFG.tables || !OFG.tables.fromFile || !OFG.tables.toMarkdown) {
+      this._showNotice('error', 'Modulo tabelle non disponibile.');
+      return;
+    }
+    this._showNotice('info',
+      'Importazione di "' + (file.name || 'foglio') + '" in corso…');
+    OFG.tables.fromFile(file).then(function (table) {
+      /* Titolo = nome del file senza estensione. */
+      var title = String(file.name || '').replace(/\.[^.]+$/, '');
+      var block = OFG.tables.toMarkdown(table, { title: title });
+      self._appendBlock(block);
+      var nRows = (table.rows && table.rows.length) || 0;
+      self._showNotice('info',
+        'Tabella importata (' + nRows + (nRows === 1 ? ' riga' : ' righe') + ').');
+    }).catch(function (err) {
+      self._showNotice('error',
+        'Import tabella non riuscito: ' + (err && err.message ? err.message : 'file non valido') + '.');
+    });
+  };
+
+  /* --------------------------------------------------------
+     MODALITA' LAYOUT (ritaglio foto + drop su slide)
+     -------------------------------------------------------- */
+
+  /* Attiva/disattiva la modalita' di lavoro visuale. Aggiunge la classe
+     'is-layout' al contenitore anteprima (gli stili stanno in editor.css). */
+  Editor.prototype._toggleLayout = function () {
+    this.layout = !this.layout;
+    if (this.elBtnLayout) {
+      this.elBtnLayout.classList.toggle('is-active', this.layout);
+      this.elBtnLayout.setAttribute('aria-pressed', String(this.layout));
+    }
+    if (this.elPreview) {
+      this.elPreview.classList.toggle('is-layout', this.layout);
+    }
+    this._showNotice('info', this.layout
+      ? 'Modalita\' Layout attiva: clicca una foto per inquadrarla, trascina una foto su una slide.'
+      : 'Modalita\' Layout disattivata.');
+  };
+
+  /* Trova l'indice (data-index) della slide che contiene il nodo dato. */
+  function slideIndexOf(node) {
+    var slide = node && node.closest ? node.closest('[data-index]') : null;
+    if (!slide) return -1;
+    var idx = parseInt(slide.getAttribute('data-index'), 10);
+    return isNaN(idx) ? -1 : idx;
+  }
+
+  /* Click in modalita' Layout: se su un'immagine (o sul suo media) apre
+     il cropper per regolare l'inquadratura della foto di quella slide. */
+  Editor.prototype._onPreviewClick = function (e) {
+    var self = this;
+    if (!OFG.Cropper || !OFG.Cropper.open || !OFG.blocks) return;
+    var index = slideIndexOf(e.target);
+    if (index < 0) return;
+
+    /* Cerca un <img> dentro la slide cliccata. */
+    var slide = e.target.closest('[data-index]');
+    var imgEl = slide ? slide.querySelector('.media__img, img') : null;
+
+    var info = OFG.blocks.getImage ? OFG.blocks.getImage(this.elSource.value, index) : null;
+    if (!info) return; /* la slide non ha un'immagine da inquadrare */
+
+    /* src per l'anteprima del cropper: usa quello renderizzato, oppure
+       risolvi il riferimento via store immagini. */
+    var src = imgEl && imgEl.src ? imgEl.src : '';
+    if (!src && OFG.images && OFG.images.resolve) {
+      src = OFG.images.resolve(info.ref) || '';
+    }
+
+    OFG.Cropper.open({
+      src: src,
+      opts: info.opts || {},
+      onApply: function (o) {
+        if (!self.elSource) return;
+        var md = OFG.blocks.setImageOpts(self.elSource.value, index, o);
+        self.elSource.value = md;
+        self._render();
+        self._persist();
+      }
+    });
+  };
+
+  /* Drop di una foto su una slide in modalita' Layout: imposta l'immagine
+     di QUELLA slide. Sorgenti: file immagine (lo aggiunge allo store) o id
+     trascinato dalla galleria (via dataTransfer text). */
+  Editor.prototype._onPreviewDrop = function (e) {
+    var self = this;
+    var slide = e.target && e.target.closest ? e.target.closest('[data-index]') : null;
+    if (slide) slide.classList.remove('is-drop-target');
+    var index = slideIndexOf(e.target);
+    if (index < 0 || !OFG.blocks || !OFG.blocks.setImage) return;
+
+    var dt = e.dataTransfer;
+    if (!dt) return;
+
+    /* 1) File immagine trascinato dal sistema. */
+    var files = dt.files;
+    if (files && files.length) {
+      var img = null;
+      for (var i = 0; i < files.length; i++) {
+        var n = (files[i].name || '').toLowerCase();
+        if (/^image\//.test(files[i].type) || /\.(png|jpe?g|gif|webp|svg|avif)$/.test(n)) {
+          img = files[i]; break;
+        }
+      }
+      if (img && OFG.images && OFG.images.add) {
+        OFG.images.add(img).then(function (id) {
+          self._setSlideImage(index, 'img:' + id);
+        }).catch(function (err) {
+          self._showNotice('error',
+            'Immagine non caricata: ' + (err && err.message ? err.message : 'errore') + '.');
+        });
+        return;
+      }
+    }
+
+    /* 2) Id immagine trascinato dalla galleria (testo del dataTransfer). */
+    var data = '';
+    try { data = dt.getData('text/plain') || dt.getData('text') || ''; } catch (e2) { data = ''; }
+    data = String(data).trim();
+    if (data) {
+      /* Accetta sia "img:ID" sia il solo ID. */
+      var ref = /^img:/i.test(data) ? data : 'img:' + data;
+      this._setSlideImage(index, ref);
+    }
+  };
+
+  /* Imposta il riferimento immagine della slide `index` nel sorgente. */
+  Editor.prototype._setSlideImage = function (index, ref) {
+    if (!this.elSource || !OFG.blocks || !OFG.blocks.setImage) return;
+    var md = OFG.blocks.setImage(this.elSource.value, index, ref);
+    this.elSource.value = md;
+    this._render();
+    this._persist();
+    this._showNotice('info', 'Foto assegnata alla slide ' + (index + 1) + '.');
+  };
+
+  /* --------------------------------------------------------
+     RIORDINO SLIDE (striscia di miniature drag&drop)
+     -------------------------------------------------------- */
+
+  /* Ricostruisce la striscia: una voce trascinabile per slide
+     (numero + tipo + titolo troncato). Drop -> OFG.blocks.reorder. */
+  Editor.prototype._renderStrip = function () {
+    var self = this;
+    if (!this.elStrip) return;
+    if (!OFG.blocks || !OFG.blocks.split || !OFG.blocks.reorder) {
+      this.elStrip.innerHTML = '';
+      return;
+    }
+
+    /* Svuota e ricostruisce. */
+    this.elStrip.innerHTML = '';
+    var slides = this.slides || [];
+
+    for (var i = 0; i < slides.length; i++) {
+      var s = slides[i] || {};
+      var item = document.createElement('div');
+      item.className = 'slide-strip__item';
+      item.setAttribute('draggable', 'true');
+      item.setAttribute('data-strip-index', String(i));
+
+      var num = document.createElement('span');
+      num.className = 'slide-strip__num';
+      num.textContent = String(i + 1);
+
+      var meta = document.createElement('span');
+      meta.className = 'slide-strip__meta';
+
+      var type = document.createElement('span');
+      type.className = 'slide-strip__type';
+      type.textContent = s.type || 'slide';
+
+      var title = document.createElement('span');
+      title.className = 'slide-strip__title';
+      title.textContent = stripTitle(s);
+
+      meta.appendChild(type);
+      meta.appendChild(title);
+      item.appendChild(num);
+      item.appendChild(meta);
+      this.elStrip.appendChild(item);
+    }
+
+    /* Aggancia i listener di drag una sola volta sul contenitore
+       (delega): semplice e robusto. */
+    if (!this._stripBound) {
+      this._stripBound = true;
+      var strip = this.elStrip;
+
+      strip.addEventListener('dragstart', function (e) {
+        var item = e.target && e.target.closest ? e.target.closest('.slide-strip__item') : null;
+        if (!item) return;
+        self._dragFrom = parseInt(item.getAttribute('data-strip-index'), 10);
+        item.classList.add('is-dragging');
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          /* Necessario per Firefox: serve un payload. */
+          try { e.dataTransfer.setData('text/plain', String(self._dragFrom)); } catch (e2) {}
+        }
+      });
+
+      strip.addEventListener('dragover', function (e) {
+        if (self._dragFrom == null) return;
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        var item = e.target && e.target.closest ? e.target.closest('.slide-strip__item') : null;
+        /* Evidenzia la voce sotto il cursore. */
+        var all = strip.querySelectorAll('.slide-strip__item');
+        for (var k = 0; k < all.length; k++) all[k].classList.remove('is-drop-over');
+        if (item) item.classList.add('is-drop-over');
+      });
+
+      strip.addEventListener('dragleave', function (e) {
+        var item = e.target && e.target.closest ? e.target.closest('.slide-strip__item') : null;
+        if (item) item.classList.remove('is-drop-over');
+      });
+
+      strip.addEventListener('drop', function (e) {
+        e.preventDefault();
+        var item = e.target && e.target.closest ? e.target.closest('.slide-strip__item') : null;
+        var from = self._dragFrom;
+        self._dragFrom = null;
+        /* Pulisci evidenziazioni. */
+        var all = strip.querySelectorAll('.slide-strip__item');
+        for (var k = 0; k < all.length; k++) {
+          all[k].classList.remove('is-drop-over');
+          all[k].classList.remove('is-dragging');
+        }
+        if (item == null || from == null || isNaN(from)) return;
+        var to = parseInt(item.getAttribute('data-strip-index'), 10);
+        if (isNaN(to) || to === from) return;
+        if (!self.elSource) return;
+        var md = OFG.blocks.reorder(self.elSource.value, from, to);
+        self.elSource.value = md;
+        self._render();
+        self._persist();
+      });
+
+      strip.addEventListener('dragend', function () {
+        self._dragFrom = null;
+        var all = strip.querySelectorAll('.slide-strip__item');
+        for (var k = 0; k < all.length; k++) {
+          all[k].classList.remove('is-drop-over');
+          all[k].classList.remove('is-dragging');
+        }
+      });
+    }
+  };
+
+  /* Ricava un titolo breve per una slide nella striscia (testo senza tag). */
+  function stripTitle(s) {
+    var t = s && (s.title || s.text || '');
+    if (!t) return '(senza titolo)';
+    var tmp = document.createElement('div');
+    tmp.innerHTML = String(t);
+    var text = (tmp.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!text) return '(senza titolo)';
+    return text.length > 40 ? text.slice(0, 39) + '…' : text;
+  }
 
   /* --------------------------------------------------------
      EXPORT
