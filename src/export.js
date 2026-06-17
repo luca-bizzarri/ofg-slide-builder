@@ -408,13 +408,31 @@
    * @param {Object} [opts] { mode, title, filename }
    * @returns {Promise<string>}
    */
+  /* Sostituisce i riferimenti "img:ID" con il dataURI reale dello store,
+     cosi' l'HTML esportato resta un singolo file autonomo (lo store
+     immagini non viene incluso nell'export). Per url/data/path lascia
+     invariato; per un "img:ID" mancante azzera (mostrera' il placeholder). */
+  function resolveModelImages(slides) {
+    var canResolve = global.OFG && global.OFG.images
+      && typeof global.OFG.images.resolve === 'function';
+    return slides.map(function (s) {
+      if (!s || !s.image || !/^img:/i.test(String(s.image))) return s;
+      var clone = {};
+      for (var k in s) {
+        if (Object.prototype.hasOwnProperty.call(s, k)) clone[k] = s[k];
+      }
+      clone.image = canResolve ? (global.OFG.images.resolve(s.image) || '') : '';
+      return clone;
+    });
+  }
+
   function exportHTML(slides, opts) {
     opts = opts || {};
     var mode = opts.mode === 'landing' ? 'landing' : 'deck';
     var title = opts.title && String(opts.title).trim()
       ? String(opts.title).trim()
       : 'Presentazione OFG';
-    var models = Array.isArray(slides) ? slides : [];
+    var models = resolveModelImages(Array.isArray(slides) ? slides : []);
 
     return Promise.all([
       fetchModuleSources(),
