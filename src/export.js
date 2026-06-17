@@ -321,6 +321,14 @@
       '.pos-indicator__col.is-active{background:var(--accent)}',
       '.pos-indicator__label{color:#fff;font-size:var(--fs-small);',
       'font-weight:var(--fw-semibold);letter-spacing:var(--ls-caps)}',
+      /* ---- Tabelle (parita' con slides.css) ---- */
+      '.slide--table .slide__inner{align-items:flex-start}',
+      '.table-wrap{width:100%;max-height:64vh;overflow:auto;border:1px solid var(--hairline);border-radius:10px}',
+      '.data-table{width:100%;border-collapse:collapse;font-size:clamp(13px,1.35vw,18px);font-variant-numeric:tabular-nums;color:var(--fg)}',
+      '.data-table th,.data-table td{text-align:left;padding:clamp(8px,1vw,14px) clamp(10px,1.2vw,18px);border-bottom:1px solid var(--hairline);vertical-align:top}',
+      '.data-table thead th{position:sticky;top:0;z-index:1;background:var(--accent);color:#000;font-weight:800;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}',
+      '.data-table tbody tr:nth-child(even){background:color-mix(in srgb,var(--fg) 7%,transparent)}',
+      '.data-table tbody tr:last-child td{border-bottom:none}',
       /* ---- Responsive ---- */
       '@media (max-width:768px){',
       '.slide--split .slide__inner{flex-direction:column}',
