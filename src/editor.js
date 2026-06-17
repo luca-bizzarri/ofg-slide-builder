@@ -138,6 +138,15 @@
     this.elBtnLayout = q(r, '#btn-layout');
     this.elStrip = q(r, '#slide-strip');
 
+    /* Salva/Apri progetto (.ofg). */
+    this.elBtnSaveProject = q(r, '#btn-save-project');
+    this.elOfgInput = q(r, '#ofg-input');
+
+    /* Menu a tendina della toolbar (File / Importa / Inserisci). */
+    this.menus = r.querySelectorAll
+      ? Array.prototype.slice.call(r.querySelectorAll('.menu'))
+      : [];
+
     /* Toggle a segmenti modalita' e tema. */
     this.modeBtns = r.querySelectorAll
       ? Array.prototype.slice.call(r.querySelectorAll('[data-mode]'))
@@ -305,6 +314,136 @@
         self._onPreviewDrop(e);
       });
     }
+
+    /* --- Menu a tendina (File / Importa / Inserisci) --- */
+    this._bindMenus();
+
+    /* --- Salva progetto (.ofg) --- */
+    if (this.elBtnSaveProject) {
+      this.elBtnSaveProject.addEventListener('click', function () {
+        self._closeMenus();
+        self._saveProject();
+      });
+    }
+
+    /* --- Apri progetto (.ofg) via input --- */
+    if (this.elOfgInput) {
+      this.elOfgInput.addEventListener('change', function (ev) {
+        var file = ev.target.files && ev.target.files[0];
+        self._closeMenus();
+        if (file) self._openProject(file);
+        /* Reset cosi' si puo' riaprire lo stesso file. */
+        ev.target.value = '';
+      });
+    }
+  };
+
+  /* --------------------------------------------------------
+     MENU A TENDINA (generici)
+     --------------------------------------------------------
+     Per ogni .menu: il bottone .menu__btn apre/chiude il pannello;
+     aprendone uno si chiudono gli altri; click esterno ed Esc chiudono
+     tutto; le frecce su/giu' navigano fra le voci. Le voci che sono
+     <label> (input file) o <button> eseguono la loro azione nativa: dopo
+     un click su una voce chiudiamo il menu. */
+  Editor.prototype._bindMenus = function () {
+    var self = this;
+    if (!this.menus || !this.menus.length) return;
+
+    this.menus.forEach(function (menu) {
+      var btn = menu.querySelector('.menu__btn');
+      var panel = menu.querySelector('.menu__panel');
+      if (!btn || !panel) return;
+
+      /* Toggle apertura sul bottone. */
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var willOpen = !menu.classList.contains('is-open');
+        self._closeMenus();
+        if (willOpen) self._openMenu(menu);
+      });
+
+      /* Navigazione da tastiera sul bottone. */
+      btn.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          self._closeMenus();
+          self._openMenu(menu);
+          self._focusItem(panel, 0);
+        }
+      });
+
+      /* Click su una voce: lascia eseguire l'azione, poi chiudi. */
+      panel.addEventListener('click', function () {
+        /* Differiamo la chiusura cosi' il click nativo (es. label->input)
+           viene processato prima di nascondere il pannello. */
+        setTimeout(function () { self._closeMenus(); }, 0);
+      });
+
+      /* Navigazione da tastiera dentro il pannello. */
+      panel.addEventListener('keydown', function (e) {
+        var items = self._menuItems(panel);
+        var idx = items.indexOf(document.activeElement);
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          self._focusItem(panel, idx < 0 ? 0 : idx + 1);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          self._focusItem(panel, idx <= 0 ? items.length - 1 : idx - 1);
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          self._closeMenus();
+          btn.focus();
+        } else if (e.key === 'Tab') {
+          self._closeMenus();
+        }
+      });
+    });
+
+    /* Click esterno: chiude tutti i menu. */
+    document.addEventListener('click', function (e) {
+      var inside = false;
+      self.menus.forEach(function (menu) {
+        if (menu.contains(e.target)) inside = true;
+      });
+      if (!inside) self._closeMenus();
+    });
+
+    /* Esc globale: chiude tutti i menu. */
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') self._closeMenus();
+    });
+  };
+
+  /* Voci focalizzabili di un pannello (label per input file + button). */
+  Editor.prototype._menuItems = function (panel) {
+    return Array.prototype.slice.call(panel.querySelectorAll('.menu__item'));
+  };
+
+  /* Sposta il focus sulla voce all'indice dato (con wrap). */
+  Editor.prototype._focusItem = function (panel, index) {
+    var items = this._menuItems(panel);
+    if (!items.length) return;
+    var n = items.length;
+    var i = ((index % n) + n) % n;
+    try { items[i].focus(); } catch (e) { /* no-op */ }
+  };
+
+  /* Apre un singolo menu (aggiorna classe e aria-expanded). */
+  Editor.prototype._openMenu = function (menu) {
+    menu.classList.add('is-open');
+    var btn = menu.querySelector('.menu__btn');
+    if (btn) btn.setAttribute('aria-expanded', 'true');
+  };
+
+  /* Chiude tutti i menu della toolbar. */
+  Editor.prototype._closeMenus = function () {
+    if (!this.menus) return;
+    this.menus.forEach(function (menu) {
+      menu.classList.remove('is-open');
+      var btn = menu.querySelector('.menu__btn');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    });
   };
 
   /* Avvio: carica il sorgente (autosave > sample esterno > starter)
@@ -508,11 +647,13 @@
      immagini -> store, .pptx -> import, altro -> markdown. */
   Editor.prototype._handleDroppedFiles = function (fileList) {
     var files = Array.prototype.slice.call(fileList);
-    var images = [], md = null, pptx = null, sheet = null;
+    var images = [], md = null, pptx = null, sheet = null, project = null;
     for (var i = 0; i < files.length; i++) {
       var n = (files[i].name || '').toLowerCase();
       if (/^image\//.test(files[i].type) || /\.(png|jpe?g|gif|webp|svg|avif)$/.test(n)) {
         images.push(files[i]);
+      } else if (/\.(ofg|json)$/.test(n)) {
+        project = project || files[i];
       } else if (/\.pptx$/.test(n)) {
         pptx = pptx || files[i];
       } else if (/\.(xlsx|xls|csv)$/.test(n)) {
@@ -521,6 +662,7 @@
         md = md || files[i]; // .md/.txt o sconosciuto: tentiamo come markdown
       }
     }
+    if (project) { this._openProject(project); return; }
     if (pptx) { this._importPptx(pptx); return; }
     if (sheet) { this._importTable(sheet); return; }
     if (images.length) { this._addImageFiles(images); return; }
@@ -957,6 +1099,61 @@
       }
     }
     return 'Presentazione OFG';
+  };
+
+  /* --------------------------------------------------------
+     SALVA / APRI PROGETTO (.ofg)
+     --------------------------------------------------------
+     Un progetto raccoglie markdown + immagini + impostazioni in un
+     unico file .ofg (JSON), cosi' l'utente puo' riprendere il lavoro
+     senza perdere le foto. Delega a OFG.project (degrada se manca). */
+
+  Editor.prototype._saveProject = function () {
+    if (!OFG.project || !OFG.project.download) {
+      this._showNotice('error', 'Modulo progetto non disponibile.');
+      return;
+    }
+    var state = {
+      markdown: this.elSource ? this.elSource.value : '',
+      mode: this.mode,
+      theme: this.theme,
+      images: (OFG.images && OFG.images.all) ? OFG.images.all() : []
+    };
+    var name = this._deriveTitle(this.slides || []) + '.ofg';
+    try {
+      OFG.project.download(state, name);
+      this._showNotice('info', 'Progetto salvato.');
+    } catch (err) {
+      this._showNotice('error',
+        'Salvataggio non riuscito: ' + (err && err.message ? err.message : 'errore') + '.');
+    }
+  };
+
+  /* Apre un file di progetto (.ofg/.json): ripristina immagini,
+     markdown e impostazioni, poi ri-renderizza e rimonta la galleria. */
+  Editor.prototype._openProject = function (file) {
+    var self = this;
+    if (!OFG.project || !OFG.project.open) {
+      this._showNotice('error', 'Modulo progetto non disponibile.');
+      return;
+    }
+    OFG.project.open(file).then(function (state) {
+      /* Ripristina le immagini preservando gli id (prima del render,
+         cosi' i token img: si risolvono subito). */
+      if (OFG.images && OFG.images.loadAll) {
+        OFG.images.loadAll(state.images || []);
+      }
+      if (self.elSource) self.elSource.value = state.markdown || '';
+      if (state.mode) self.setMode(state.mode);
+      if (state.theme) self.setTheme(state.theme);
+      self._render();
+      self._persist();
+      if (self._mountGallery) self._mountGallery();
+      self._showNotice('info', 'Progetto aperto.');
+    }).catch(function (err) {
+      self._showNotice('error',
+        'Apertura non riuscita: ' + (err && err.message ? err.message : 'file non valido') + '.');
+    });
   };
 
   /* --------------------------------------------------------
