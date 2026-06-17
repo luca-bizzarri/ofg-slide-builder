@@ -118,6 +118,8 @@
 
     this.elFileInput = q(r, '#file-input');
     this.elBtnExport = q(r, '#btn-export');
+    this.elPptxInput = q(r, '#pptx-input');
+    this.elGallery = q(r, '#image-gallery');
 
     /* Toggle a segmenti modalita' e tema. */
     this.modeBtns = r.querySelectorAll
@@ -167,8 +169,36 @@
       panel.addEventListener('drop', function (e) {
         stop(e);
         panel.classList.remove('is-dragover');
-        var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-        if (file) self._loadFile(file);
+        var files = e.dataTransfer && e.dataTransfer.files;
+        if (files && files.length) self._handleDroppedFiles(files);
+      });
+    }
+
+    /* --- Importa PPTX (anche da Google Slides esportato in .pptx) --- */
+    if (this.elPptxInput) {
+      this.elPptxInput.addEventListener('change', function (ev) {
+        var file = ev.target.files && ev.target.files[0];
+        if (file) self._importPptx(file);
+        ev.target.value = '';
+      });
+    }
+
+    /* --- Incolla immagini dagli appunti direttamente nella textarea --- */
+    if (this.elSource) {
+      this.elSource.addEventListener('paste', function (ev) {
+        var items = ev.clipboardData && ev.clipboardData.items;
+        if (!items) return;
+        var imgs = [];
+        for (var i = 0; i < items.length; i++) {
+          if (items[i].kind === 'file' && /^image\//.test(items[i].type)) {
+            var f = items[i].getAsFile();
+            if (f) imgs.push(f);
+          }
+        }
+        if (imgs.length) {
+          ev.preventDefault();
+          self._addImageFiles(imgs);
+        }
       });
     }
 
@@ -206,6 +236,7 @@
       }
     }
     this._syncControls();
+    this._mountGallery();
   };
 
   /* Carica il sample dimostrativo (best-effort). */
@@ -376,6 +407,120 @@
       self._showNotice('error', 'Impossibile leggere il file selezionato.');
     };
     reader.readAsText(file);
+  };
+
+  /* --------------------------------------------------------
+     IMMAGINI (store + galleria) e IMPORT PPTX
+     -------------------------------------------------------- */
+
+  /* Smista i file trascinati nel pannello in base al tipo:
+     immagini -> store, .pptx -> import, altro -> markdown. */
+  Editor.prototype._handleDroppedFiles = function (fileList) {
+    var files = Array.prototype.slice.call(fileList);
+    var images = [], md = null, pptx = null;
+    for (var i = 0; i < files.length; i++) {
+      var n = (files[i].name || '').toLowerCase();
+      if (/^image\//.test(files[i].type) || /\.(png|jpe?g|gif|webp|svg|avif)$/.test(n)) {
+        images.push(files[i]);
+      } else if (/\.pptx$/.test(n)) {
+        pptx = pptx || files[i];
+      } else {
+        md = md || files[i]; // .md/.txt o sconosciuto: tentiamo come markdown
+      }
+    }
+    if (pptx) { this._importPptx(pptx); return; }
+    if (images.length) { this._addImageFiles(images); return; }
+    if (md) this._loadFile(md);
+  };
+
+  /* Aggiunge una o piu' immagini allo store e inserisce i token nel testo. */
+  Editor.prototype._addImageFiles = function (files) {
+    var self = this;
+    if (!OFG.images || !OFG.images.add) {
+      this._showNotice('error', 'Modulo immagini non disponibile.');
+      return;
+    }
+    var queue = Array.prototype.slice.call(files);
+    var added = 0;
+    function next() {
+      if (!queue.length) {
+        if (added) {
+          self._render();
+          self._persist();
+          self._showNotice('info',
+            added + (added === 1 ? ' immagine aggiunta' : ' immagini aggiunte') + ' e inserita nel testo.');
+        }
+        return;
+      }
+      var f = queue.shift();
+      OFG.images.add(f).then(function (id) {
+        self._insertImageToken(id);
+        added++;
+        next();
+      }).catch(function (err) {
+        self._showNotice('error',
+          'Immagine non caricata: ' + (err && err.message ? err.message : 'errore') + '.');
+        next();
+      });
+    }
+    next();
+  };
+
+  /* Inserisce "![](img:ID)" alla posizione del cursore. */
+  Editor.prototype._insertImageToken = function (id) {
+    this._insertAtCursor('\n![](img:' + id + ')\n');
+  };
+
+  Editor.prototype._insertAtCursor = function (text) {
+    var ta = this.elSource;
+    if (!ta) return;
+    var start = ta.selectionStart != null ? ta.selectionStart : ta.value.length;
+    var end = ta.selectionEnd != null ? ta.selectionEnd : ta.value.length;
+    ta.value = ta.value.slice(0, start) + text + ta.value.slice(end);
+    var pos = start + text.length;
+    try { ta.setSelectionRange(pos, pos); ta.focus(); } catch (e) { /* no-op */ }
+  };
+
+  /* Monta la galleria immagini: click su una miniatura inserisce il token. */
+  Editor.prototype._mountGallery = function () {
+    var self = this;
+    if (!this.elGallery || !OFG.images || !OFG.images.mountGallery) return;
+    OFG.images.mountGallery(this.elGallery, {
+      onInsert: function (id) {
+        self._insertImageToken(id);
+        self._render();
+        self._persist();
+      }
+    });
+  };
+
+  /* Importa un .pptx (PowerPoint o Google Slides esportato in .pptx):
+     estrae testo e immagini e sostituisce il sorgente col markdown generato. */
+  Editor.prototype._importPptx = function (file) {
+    var self = this;
+    if (!OFG.importPptx) {
+      this._showNotice('error', 'Modulo di import PPT non disponibile.');
+      return;
+    }
+    this._showNotice('info',
+      'Importazione di "' + (file.name || 'presentazione') + '" in corso…');
+    OFG.importPptx(file).then(function (res) {
+      if (self.elSource) {
+        self.elSource.value = res.markdown || '';
+        self._render();
+        self._persist();
+      }
+      var msg = 'Importate ' + res.slideCount + (res.slideCount === 1 ? ' slide' : ' slide');
+      if (res.imageCount) msg += ' e ' + res.imageCount + (res.imageCount === 1 ? ' immagine' : ' immagini');
+      msg += '.';
+      if (res.warnings && res.warnings.length) {
+        msg += ' Non importati alcuni elementi (es. ' + res.warnings[0] + ').';
+      }
+      self._showNotice('info', msg);
+    }).catch(function (err) {
+      self._showNotice('error',
+        'Import non riuscito: ' + (err && err.message ? err.message : 'file non valido') + '.');
+    });
   };
 
   /* --------------------------------------------------------
