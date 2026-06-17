@@ -260,6 +260,26 @@
     notify();
   }
 
+  // Sostituisce l'intero store con un array dato, PRESERVANDO gli id
+  // (usato per aprire un progetto .ofg: i token "img:ID" nel markdown
+  // devono continuare a puntare alle stesse immagini). Ricalcola nextId.
+  function loadAll(arr) {
+    if (!Array.isArray(arr)) return;
+    store = arr.filter(function (it) {
+      return it && it.id != null && typeof it.dataUri === 'string';
+    }).map(function (it) {
+      return { id: String(it.id), name: String(it.name || ''), dataUri: it.dataUri };
+    });
+    var maxId = 0;
+    store.forEach(function (it) {
+      var n = parseInt(it.id, 10);
+      if (!isNaN(n) && n > maxId) maxId = n;
+    });
+    nextId = maxId + 1;
+    persist();
+    notify();
+  }
+
   // ----------------------------------------------------------
   // Galleria thumbnail (mountGallery)
   // ----------------------------------------------------------
@@ -401,6 +421,7 @@
     all: all,
     remove: remove,
     clear: clear,
+    loadAll: loadAll,
     mountGallery: mountGallery
   };
 })();
